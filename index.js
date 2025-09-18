@@ -116,7 +116,8 @@ async function startXeonBotInc() {
     const XeonBotInc = makeWASocket({
         version,
         logger: pino({ level: 'silent' }),
-        printQRInTerminal: !pairingCode,
+        printQRInTerminal: false, // Forçar desabilitação do QR code
+        mobile: false, // Garantir que não use modo mobile
         browser: ["Ubuntu", "Chrome", "20.0.04"],
         auth: {
             creds: state.creds,
@@ -124,14 +125,14 @@ async function startXeonBotInc() {
         },
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
-        syncFullHistory: true,
+        syncFullHistory: false, // Reduzir para evitar problemas de conexão
         getMessage: async (key) => {
             let jid = jidNormalizedUser(key.remoteJid)
             let msg = await store.loadMessage(jid, key.id)
             return msg?.message || ""
         },
         msgRetryCounterCache,
-        defaultQueryTimeoutMs: undefined,
+        defaultQueryTimeoutMs: 60000, // 60 segundos timeout
     })
 
     store.bind(XeonBotInc.ev)
@@ -283,21 +284,27 @@ async function startXeonBotInc() {
             XeonBotInc.ws.on('error', (err) => console.log(chalk.red('[DEBUG] WebSocket ERROR:', err.message)))
         }
 
-        // Timeout de segurança: se nada acontecer em 10 segundos, tenta solicitar código
-        setTimeout(async () => {
-            if (global.pairingPhoneNumber) {
-                console.log(chalk.yellow('[DEBUG] TIMEOUT: Forçando solicitação de pairing code...'))
+        // Timeout de segurança melhorado
+        global.initialTimeout = setTimeout(async () => {
+            if (global.pairingPhoneNumber && !XeonBotInc.authState.creds.registered) {
+                console.log(chalk.yellow('[DEBUG] ⏰ Timeout inicial - tentando forçar pairing code...'))
                 try {
                     let code = await XeonBotInc.requestPairingCode(global.pairingPhoneNumber)
                     code = code?.match(/.{1,4}/g)?.join("-") || code
-                    console.log(chalk.black(chalk.bgGreen(`Seu Código de Emparelhamento: `)), chalk.black(chalk.white(code)))
-                    console.log(chalk.yellow(`\nDigite este código no seu WhatsApp:\n1. Abra o WhatsApp\n2. Vá em Configurações > Aparelhos conectados\n3. Toque em "Conectar um aparelho"\n4. Digite o código mostrado acima`))
+                    console.log(chalk.black(chalk.bgGreen(`\n✅ SEU CÓDIGO DE EMPARELHAMENTO: `)), chalk.black(chalk.bgWhite(` ${code} `)))
+                    console.log(chalk.yellow(`\n📱 CONECTE SEU CELULAR AGORA:`))
+                    console.log(chalk.cyan(`1. Abra o WhatsApp no seu celular`))
+                    console.log(chalk.cyan(`2. Vá em Configurações (⚙️) → Aparelhos conectados`))
+                    console.log(chalk.cyan(`3. Toque em "Conectar um aparelho"`))
+                    console.log(chalk.cyan(`4. Digite o código: ${code}`))
+                    console.log(chalk.green(`\n⏳ Aguardando conexão do celular...\n`))
                     global.pairingPhoneNumber = null
                 } catch (error) {
-                    console.error('[DEBUG] Erro no timeout ao solicitar código:', error.message)
+                    console.error('[DEBUG] Erro no timeout inicial:', error.message)
+                    console.log(chalk.red('❌ Falha ao obter código. Reinicie o bot.'))
                 }
             }
-        }, 10000)
+        }, 8000) // Reduzido para 8 segundos
     }
 
     // Debug: verificar se o event listener está sendo registrado
@@ -309,33 +316,56 @@ async function startXeonBotInc() {
         console.log(chalk.magenta(`[DEBUG] *** CONNECTION UPDATE EVENT *** : ${connection}`))
         console.log(chalk.magenta(`[DEBUG] Event data:`, JSON.stringify(s, null, 2)))
 
-        // Solicitar pairing code quando conectando
+        // Solicitar pairing code apenas uma vez quando conectando
         if (connection === 'connecting' && pairingCode && global.pairingPhoneNumber && !XeonBotInc.authState.creds.registered) {
             console.log(chalk.yellow('[DEBUG] Estado connecting detectado, solicitando pairing code...'))
-            setTimeout(async () => {
+
+            // Limpar timeout anterior se existir
+            if (global.pairingTimeout) {
+                clearTimeout(global.pairingTimeout)
+            }
+
+            global.pairingTimeout = setTimeout(async () => {
                 try {
                     console.log(chalk.green('[DEBUG] Solicitando código de emparelhamento...'))
                     let code = await XeonBotInc.requestPairingCode(global.pairingPhoneNumber)
                     console.log(chalk.cyan(`[DEBUG] Código recebido: ${code}`))
 
                     code = code?.match(/.{1,4}/g)?.join("-") || code
-                    console.log(chalk.black(chalk.bgGreen(`Seu Código de Emparelhamento: `)), chalk.black(chalk.white(code)))
-                    console.log(chalk.yellow(`\nDigite este código no seu WhatsApp:\n1. Abra o WhatsApp\n2. Vá em Configurações > Aparelhos conectados\n3. Toque em "Conectar um aparelho"\n4. Digite o código mostrado acima`))
+                    console.log(chalk.black(chalk.bgGreen(`\n✅ SEU CÓDIGO DE EMPARELHAMENTO: `)), chalk.black(chalk.bgWhite(` ${code} `)))
+                    console.log(chalk.yellow(`\n📱 CONECTE SEU CELULAR AGORA:`))
+                    console.log(chalk.cyan(`1. Abra o WhatsApp no seu celular`))
+                    console.log(chalk.cyan(`2. Vá em Configurações (⚙️) → Aparelhos conectados`))
+                    console.log(chalk.cyan(`3. Toque em "Conectar um aparelho"`))
+                    console.log(chalk.cyan(`4. Digite o código: ${code}`))
+                    console.log(chalk.green(`\n⏳ Aguardando conexão do celular...\n`))
+
                     global.pairingPhoneNumber = null // Limpar após uso
                 } catch (error) {
                     console.error('[DEBUG] Erro ao solicitar código:', error)
-                    console.log(chalk.red('Falha ao obter código. Verifique seu número e tente novamente.'))
+                    console.log(chalk.red('❌ Falha ao obter código. Reinicie o bot e tente novamente.'))
                 }
-            }, 3000) // Delay para garantir que a conexão esteja estável
+            }, 2000) // Delay reduzido
         }
 
         if (connection == "open") {
+            // Limpar todos os timeouts de pairing quando conectar
+            if (global.initialTimeout) {
+                clearTimeout(global.initialTimeout);
+                global.initialTimeout = null;
+            }
+            if (global.pairingTimeout) {
+                clearTimeout(global.pairingTimeout);
+                global.pairingTimeout = null;
+            }
+
             console.log(chalk.magenta(` `))
+            console.log(chalk.green(`🎉 CONEXÃO ESTABELECIDA COM SUCESSO! 🎉`))
             console.log(chalk.yellow(`🌿Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
 
             const botNumber = XeonBotInc.user.id.split(':')[0] + '@s.whatsapp.net';
             await XeonBotInc.sendMessage(botNumber, {
-                text: `🤖 Bot Connected Successfully!\n\n⏰ Time: ${new Date().toLocaleString()}\n✅ Status: Online and Ready!`
+                text: `🤖 Bot Connected Successfully! ✅\n\nBot Version: 2.1.8\n⏰ Time: ${new Date().toLocaleString()}\n✅ Status: Online and Ready!\n\n🎯 Ship command otimizado e funcionando!`
             });
 
             await delay(1999)
