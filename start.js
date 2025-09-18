@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const PORT = process.env.PORT || 10000;
+
 // Startup script for Knight Bot with Web Interface
 console.log('🚀 Iniciando Knight Bot com Interface Web...\n');
 
@@ -10,7 +12,7 @@ const { setBotInstance, updateQR, server } = require('./server');
 const startBot = require('./index');
 
 console.log('✅ Knight Bot com Interface Web iniciado com sucesso!');
-console.log('🌐 Interface disponível em: http://localhost:3000');
+console.log(`🌐 Interface disponível em: http://localhost:${PORT}`);
 console.log('📱 Use a interface para conectar seu WhatsApp\n');
 
 // Handle process termination

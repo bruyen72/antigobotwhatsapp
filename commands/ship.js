@@ -33,6 +33,13 @@ async function fetchAnimeShipImages() {
         }
 
         console.log('🔍 Buscando imagens de anime ships...');
+
+        // Verificar se estamos em ambiente Render
+        const isRender = process.env.RENDER || process.env.NODE_ENV === 'production';
+        if (isRender) {
+            console.log('🌐 Ambiente Render detectado, usando fallback images...');
+            return FALLBACK_IMAGES;
+        }
         
         browser = await chromium.launch({
             headless: true,
@@ -47,8 +54,14 @@ async function fetchAnimeShipImages() {
                 '--memory-pressure-off',
                 '--max_old_space_size=128',
                 '--disable-background-timer-throttling',
-                '--disable-renderer-backgrounding'
-            ]
+                '--disable-renderer-backgrounding',
+                '--disable-extensions',
+                '--disable-plugins',
+                '--disable-images',
+                '--disable-javascript',
+                '--disable-default-apps'
+            ],
+            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined
         });
         
         context = await browser.newContext({
