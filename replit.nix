@@ -1,31 +1,13 @@
 { pkgs }: {
   deps = [
-    pkgs.nodejs_20  # Ou a versão que você usa
+    pkgs.nodejs_20
     pkgs.chromium
-    pkgs.libnss3
-    pkgs.libatk1_0_0
-    pkgs.libcups2
-    pkgs.libdbus_1_3
-    pkgs.libdrm2
-    pkgs.libgbm1
-    pkgs.libgtk_3_0
-    pkgs.libxcomposite1
-    pkgs.libxdamage1
-    pkgs.libxext6
-    pkgs.libxfixes3
-    pkgs.libxrandr2
-    pkgs.libxrender1
-    pkgs.libxtst6
-    pkgs.alsaLib
-    pkgs.at_spi2_atk
-    pkgs.cairo
-    pkgs.pango
     pkgs.libuuid
     pkgs.fontconfig
     pkgs.freetype
-    pkgs.expat
     pkgs.glib
     pkgs.nss
+    pkgs.expat
     pkgs.nspr
     pkgs.dbus
     pkgs.gtk3
