@@ -14,9 +14,9 @@ async function wastedCommand(sock, chatId, message) {
     }
     
     if (!userToWaste) {
-        await sock.sendMessage(chatId, { 
-            text: 'Please mention someone or reply to their message to waste them!', 
-            ...channelInfo 
+        await sock.sendMessage(chatId, {
+            text: '⚰️ *Para criar meme Wasted:*\n\n• Marque a pessoa: `.wasted @usuário`\n• Ou responda uma mensagem com `.wasted`\n\n💀 *GTA Style!* 🎮',
+            ...channelInfo
         }, { quoted: message });
         return;
     }
@@ -39,7 +39,7 @@ async function wastedCommand(sock, chatId, message) {
         // Send the wasted image
         await sock.sendMessage(chatId, {
             image: Buffer.from(wastedResponse.data),
-            caption: `⚰️ *Wasted* : ${userToWaste.split('@')[0]} 💀\n\nRest in pieces!`,
+            caption: `⚰️ *WASTED* : ${userToWaste.split('@')[0]} 💀\n\n🎮 *Estilo GTA!* Descanse em pedaços! 😈`,
             mentions: [userToWaste],
             ...channelInfo
         });

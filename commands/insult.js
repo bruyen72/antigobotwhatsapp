@@ -50,7 +50,7 @@ async function insultCommand(sock, chatId, message) {
         
         if (!userToInsult) {
             await sock.sendMessage(chatId, {
-                text: 'Por favor mencione alguém ou responda a mensagem dela para insultá-la!'
+                text: '😈 *Para provocar alguém:*\n\n• Marque a pessoa: `.insult @usuário`\n• Ou responda uma mensagem com `.insult`\n\n⚠️ *Apenas brincadeira!* 😜'
             });
             return;
         }
@@ -61,7 +61,7 @@ async function insultCommand(sock, chatId, message) {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         await sock.sendMessage(chatId, { 
-            text: `Hey @${userToInsult.split('@')[0]}, ${insult}`,
+            text: `😈 Oi @${userToInsult.split('@')[0]}, ${insult}`,
             mentions: [userToInsult]
         });
     } catch (error) {
@@ -70,7 +70,7 @@ async function insultCommand(sock, chatId, message) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             try {
                 await sock.sendMessage(chatId, { 
-                    text: 'Por favor tente novamente em alguns segundos.'
+                    text: '⏰ Aguarde alguns segundos e tente novamente!'
                 });
             } catch (retryError) {
                 console.error('Error sending retry message:', retryError);
@@ -78,7 +78,7 @@ async function insultCommand(sock, chatId, message) {
         } else {
             try {
                 await sock.sendMessage(chatId, { 
-                    text: 'Ocorreu um erro ao enviar o insulto.'
+                    text: '❌ Erro ao enviar a provocação. Tente novamente!'
                 });
             } catch (sendError) {
                 console.error('Error sending error message:', sendError);

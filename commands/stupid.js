@@ -9,8 +9,8 @@ async function stupidCommand(sock, chatId, quotedMsg, mentionedJid, sender, args
                 ? mentionedJid[0] 
                 : sender;
 
-        // Get the text for the stupid card (default to "im+stupid" if not provided)
-        let text = args && args.length > 0 ? args.join(' ') : 'im+stupid';
+        // Get the text for the stupid card (default to "sou+burro" if not provided)
+        let text = args && args.length > 0 ? args.join(' ') : 'sou+burro';
         
         // Get the profile picture URL
         let avatarUrl;
@@ -41,8 +41,8 @@ async function stupidCommand(sock, chatId, quotedMsg, mentionedJid, sender, args
 
     } catch (error) {
         console.error('Error in stupid command:', error);
-        await sock.sendMessage(chatId, { 
-            text: '❌ Sorry, I couldn\'t generate the stupid card. Please try again later!'
+        await sock.sendMessage(chatId, {
+            text: '❌ Erro ao gerar o meme burro! Tente novamente mais tarde.'
         });
     }
 }

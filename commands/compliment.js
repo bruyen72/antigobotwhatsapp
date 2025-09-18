@@ -1,34 +1,34 @@
 const compliments = [
-    "You're amazing just the way you are!",
-    "You have a great sense of humor!",
-    "You're incredibly thoughtful and kind.",
-    "You are more powerful than you know.",
-    "You light up the room!",
-    "You're a true friend.",
-    "You inspire me!",
-    "Your creativity knows no bounds!",
-    "You have a heart of gold.",
-    "You make a difference in the world.",
-    "Your positivity is contagious!",
-    "You have an incredible work ethic.",
-    "You bring out the best in people.",
-    "Your smile brightens everyone's day.",
-    "You're so talented in everything you do.",
-    "Your kindness makes the world a better place.",
-    "You have a unique and wonderful perspective.",
-    "Your enthusiasm is truly inspiring!",
-    "You are capable of achieving great things.",
-    "You always know how to make someone feel special.",
-    "Your confidence is admirable.",
-    "You have a beautiful soul.",
-    "Your generosity knows no limits.",
-    "You have a great eye for detail.",
-    "Your passion is truly motivating!",
-    "You are an amazing listener.",
-    "You're stronger than you think!",
-    "Your laughter is infectious.",
-    "You have a natural gift for making others feel valued.",
-    "You make the world a better place just by being in it."
+    "Você é incrível do jeito que é! 🌟",
+    "Você tem um senso de humor fantástico! 😄",
+    "Você é extremamente atencioso e gentil! 💖",
+    "Você é mais poderoso do que imagina! ⚡",
+    "Você ilumina qualquer ambiente! ✨",
+    "Você é um verdadeiro amigo! 🤝",
+    "Você me inspira muito! 🌈",
+    "Sua criatividade não tem limites! 🎨",
+    "Você tem um coração de ouro! 💛",
+    "Você faz a diferença no mundo! 🌍",
+    "Sua positividade é contagiante! 😊",
+    "Você tem uma ética de trabalho incrível! 💪",
+    "Você traz o melhor das pessoas! 🌸",
+    "Seu sorriso alegra o dia de todos! 😁",
+    "Você é talentoso em tudo que faz! 🎯",
+    "Sua bondade torna o mundo melhor! 🕊️",
+    "Você tem uma perspectiva única e maravilhosa! 👁️",
+    "Seu entusiasmo é verdadeiramente inspirador! 🔥",
+    "Você é capaz de conquistar grandes coisas! 🏆",
+    "Você sempre sabe como fazer alguém se sentir especial! 💝",
+    "Sua confiança é admirável! 👑",
+    "Você tem uma alma linda! 🌺",
+    "Sua generosidade não tem limites! 🎁",
+    "Você tem um olhar aguçado para detalhes! 🔍",
+    "Sua paixão é verdadeiramente motivadora! 🚀",
+    "Você é um ouvinte incrível! 👂",
+    "Você é mais forte do que pensa! 💎",
+    "Sua risada é contagiante! 😂",
+    "Você tem um dom natural para valorizar os outros! 🌟",
+    "Você torna o mundo melhor só por existir! 🌻"
 ];
 
 async function complimentCommand(sock, chatId, message) {
@@ -51,7 +51,7 @@ async function complimentCommand(sock, chatId, message) {
         
         if (!userToCompliment) {
             await sock.sendMessage(chatId, { 
-                text: 'Please mention someone or reply to their message to compliment them!'
+                text: '🌸 *Para elogiar alguém:*\n\n• Marque a pessoa: `.compliment @usuário`\n• Ou responda uma mensagem com `.compliment`\n\n✨ *Espalhe positividade!* 💖'
             });
             return;
         }
@@ -62,7 +62,7 @@ async function complimentCommand(sock, chatId, message) {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         await sock.sendMessage(chatId, { 
-            text: `Hey @${userToCompliment.split('@')[0]}, ${compliment}`,
+            text: `💖 Oi @${userToCompliment.split('@')[0]}, ${compliment}`,
             mentions: [userToCompliment]
         });
     } catch (error) {
@@ -71,7 +71,7 @@ async function complimentCommand(sock, chatId, message) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             try {
                 await sock.sendMessage(chatId, { 
-                    text: 'Please try again in a few seconds.'
+                    text: '⏰ Aguarde alguns segundos e tente novamente!'
                 });
             } catch (retryError) {
                 console.error('Error sending retry message:', retryError);
@@ -79,7 +79,7 @@ async function complimentCommand(sock, chatId, message) {
         } else {
             try {
                 await sock.sendMessage(chatId, { 
-                    text: 'An error occurred while sending the compliment.'
+                    text: '❌ Erro ao enviar o elogio. Tente novamente!'
                 });
             } catch (sendError) {
                 console.error('Error sending error message:', sendError);

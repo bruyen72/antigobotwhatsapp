@@ -14,9 +14,9 @@ async function characterCommand(sock, chatId, message) {
     }
     
     if (!userToAnalyze) {
-        await sock.sendMessage(chatId, { 
-            text: 'Please mention someone or reply to their message to analyze their character!', 
-            ...channelInfo 
+        await sock.sendMessage(chatId, {
+            text: '🔮 *Para analisar personalidade:*\n\n• Marque a pessoa: `.character @usuário`\n• Ou responda uma mensagem com `.character`\n\n✨ *Descubra traços únicos!* 🎭',
+            ...channelInfo
         });
         return;
     }
@@ -31,12 +31,12 @@ async function characterCommand(sock, chatId, message) {
         }
 
         const traits = [
-            "Intelligent", "Creative", "Determined", "Ambitious", "Caring",
-            "Charismatic", "Confident", "Empathetic", "Energetic", "Friendly",
-            "Generous", "Honest", "Humorous", "Imaginative", "Independent",
-            "Intuitive", "Kind", "Logical", "Loyal", "Optimistic",
-            "Passionate", "Patient", "Persistent", "Reliable", "Resourceful",
-            "Sincere", "Thoughtful", "Understanding", "Versatile", "Wise"
+            "Inteligente", "Criativo", "Determinado", "Ambicioso", "Carinhoso",
+            "Carismático", "Confiante", "Empático", "Energético", "Amigável",
+            "Generoso", "Honesto", "Bem-humorado", "Imaginativo", "Independente",
+            "Intuitivo", "Gentil", "Lógico", "Leal", "Otimista",
+            "Apaixonado", "Paciente", "Persistente", "Confiável", "Esperto",
+            "Sincero", "Atencioso", "Compreensivo", "Versátil", "Sábio"
         ];
 
         // Get 3-5 random traits
@@ -56,11 +56,11 @@ async function characterCommand(sock, chatId, message) {
         });
 
         // Create character analysis message
-        const analysis = `🔮 *Character Analysis* 🔮\n\n` +
-            `👤 *User:* ${userToAnalyze.split('@')[0]}\n\n` +
-            `✨ *Key Traits:*\n${traitPercentages.join('\n')}\n\n` +
-            `🎯 *Overall Rating:* ${Math.floor(Math.random() * 21) + 80}%\n\n` +
-            `Note: This is a fun analysis and should not be taken seriously!`;
+        const analysis = `🔮 *Análise de Personalidade* 🔮\n\n` +
+            `👤 *Usuário:* ${userToAnalyze.split('@')[0]}\n\n` +
+            `✨ *Traços Principais:*\n${traitPercentages.join('\n')}\n\n` +
+            `🎯 *Avaliação Geral:* ${Math.floor(Math.random() * 21) + 80}%\n\n` +
+            `⚠ *Nota:* Esta é uma análise divertida e não deve ser levada a sério! 😄`;
 
         // Send the analysis with the user's profile picture
         await sock.sendMessage(chatId, {
@@ -72,9 +72,9 @@ async function characterCommand(sock, chatId, message) {
 
     } catch (error) {
         console.error('Error in character command:', error);
-        await sock.sendMessage(chatId, { 
-            text: 'Failed to analyze character! Try again later.',
-            ...channelInfo 
+        await sock.sendMessage(chatId, {
+            text: '❌ Erro ao analisar personalidade! Tente novamente mais tarde.',
+            ...channelInfo
         });
     }
 }

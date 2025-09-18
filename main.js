@@ -13,6 +13,9 @@ const { addWelcome, delWelcome, isWelcomeOn, addGoodbye, delGoodBye, isGoodByeOn
 const { autotypingCommand, isAutotypingEnabled, handleAutotypingForMessage, handleAutotypingForCommand, showTypingAfterCommand } = require('./commands/autotyping');
 const { autoreadCommand, isAutoreadEnabled, handleAutoread } = require('./commands/autoread');
 
+// Rate limiting system - prevents bot bans
+const rateLimiter = require('./lib/rateLimit');
+
 // Command imports
 const tagAllCommand = require('./commands/tagall');
 const helpCommand = require('./commands/help');
@@ -160,6 +163,28 @@ async function handleMessages(sock, messageUpdate, printLog) {
             message.message?.imageMessage?.caption?.trim() ||
             message.message?.videoMessage?.caption?.trim() ||
             '';
+
+        // RATE LIMITING - Prevent bot bans from excessive messages
+        const isCommand = userMessage.startsWith('.');
+        const groupIdForLimit = isGroup ? chatId : null;
+        
+        // Check rate limits before processing
+        const rateLimitCheck = rateLimiter.canSendMessage(senderId, groupIdForLimit, isCommand);
+        if (!rateLimitCheck.allowed && !message.key.fromMe && !senderIsSudo) {
+            // For rate limited users, queue their message instead of ignoring
+            if (isCommand) {
+                console.log(`⚠️ Rate limited command from ${senderId}: ${rateLimitCheck.reason}`);
+                // Send rate limit warning only occasionally to avoid spam
+                if (Math.random() < 0.1) {
+                    rateLimiter.queueMessage(async () => {
+                        await sock.sendMessage(chatId, {
+                            text: `⏰ *Rate Limit Ativo*\n\n${rateLimitCheck.reason}\n\n⏱️ Aguarde ${Math.ceil(rateLimitCheck.waitTime / 1000)} segundos\n\n🛡️ *Proteção do bot contra ban*`,
+                        }, { quoted: message });
+                    }, 'low');
+                }
+            }
+            return; // Skip processing for rate limited users
+        }
 
         // Only log command usage
         if (userMessage.startsWith('.')) {
@@ -357,6 +382,23 @@ async function handleMessages(sock, messageUpdate, printLog) {
            
             case userMessage === '.settings':
                 await settingsCommand(sock, chatId, message);
+                break;
+            case userMessage === '.ratelimit' || userMessage === '.rl':
+                // Rate limiter statistics - Owner only
+                if (!message.key.fromMe && !senderIsSudo) {
+                    await sock.sendMessage(chatId, { text: '❌ Apenas o dono pode ver estatísticas do rate limiter.' });
+                    break;
+                }
+                const stats = rateLimiter.getStats();
+                const statsMessage = `📊 *Rate Limiter Stats*\n\n` +
+                    `👥 *Usuários ativos:* ${stats.activeUsers}\n` +
+                    `👫 *Grupos ativos:* ${stats.activeGroups}\n` +
+                    `📋 *Mensagens na fila:* ${stats.queuedMessages}\n` +
+                    `💬 *Mensagens globais (1min):* ${stats.globalMessages}\n` +
+                    `⚡ *Comandos globais (1min):* ${stats.globalCommands}\n` +
+                    `🔄 *Processando fila:* ${stats.isProcessingQueue ? 'Sim' : 'Não'}\n\n` +
+                    `🛡️ *Sistema ativo e protegendo o bot!*`;
+                await sock.sendMessage(chatId, { text: statsMessage }, { quoted: message });
                 break;
             case userMessage.startsWith('.mode'):
                 // Check if sender is the owner
@@ -1032,8 +1074,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         // If a command was executed, show typing status after command execution
         if (commandExecuted !== false) {
+            // Record successful command usage for rate limiting
+            rateLimiter.recordUsage(senderId, groupIdForLimit, true);
             // Command was executed, now show typing status after command execution
             await showTypingAfterCommand(sock, chatId);
+        } else if (userMessage && !userMessage.startsWith('.')) {
+            // Record regular message usage for rate limiting
+            rateLimiter.recordUsage(senderId, groupIdForLimit, false);
         }
 
         // Function to handle .groupjid command

@@ -32,7 +32,7 @@ async function simpCommand(sock, chatId, quotedMsg, mentionedJid, sender) {
         // Send the image with caption
         await sock.sendMessage(chatId, {
             image: imageBuffer,
-            caption: '*your religion is simping*',
+            caption: '😍 *Sua religião é ser simp* 😍\n\n💝 *Membro oficial do clube dos simps!* 🎭',
             contextInfo: {
                 forwardingScore: 1,
                 isForwarded: true,
@@ -41,8 +41,8 @@ async function simpCommand(sock, chatId, quotedMsg, mentionedJid, sender) {
 
     } catch (error) {
         console.error('Error in simp command:', error);
-        await sock.sendMessage(chatId, { 
-            text: '❌ Sorry, I couldn\'t generate the simp card. Please try again later!',
+        await sock.sendMessage(chatId, {
+            text: '❌ Erro ao gerar o cartão simp! Tente novamente mais tarde.',
             contextInfo: {
                 forwardingScore: 1,
                 isForwarded: true,

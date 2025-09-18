@@ -58,10 +58,73 @@ async function miscCommand(sock, chatId, message, args) {
     const rest = args.slice(1);
 
     async function simpleAvatarOnly(endpoint) {
-        const avatarUrl = await getQuotedOrOwnImageUrl(sock, message);
-        const url = `https://api.some-random-api.com/canvas/misc/${endpoint}?avatar=${encodeURIComponent(avatarUrl)}`;
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
-        await sock.sendMessage(chatId, { image: Buffer.from(response.data) }, { quoted: message });
+        try {
+            const avatarUrl = await getQuotedOrOwnImageUrl(sock, message);
+            let url;
+
+            // Try different API endpoints based on the command
+            if (['lgbt', 'lesbian', 'nonbinary', 'pansexual', 'transgender', 'bisexual', 'asexual'].includes(endpoint)) {
+                // Try multiple APIs for LGBT+ flag overlays
+                const apis = [
+                    `https://some-random-api.com/canvas/overlay/${endpoint}?avatar=${encodeURIComponent(avatarUrl)}`,
+                    `https://api.some-random-api.com/canvas/misc/${endpoint}?avatar=${encodeURIComponent(avatarUrl)}`,
+                    `https://some-random-api.com/canvas/misc/${endpoint}?avatar=${encodeURIComponent(avatarUrl)}`
+                ];
+
+                for (const apiUrl of apis) {
+                    try {
+                        const response = await axios.get(apiUrl, { responseType: 'arraybuffer', timeout: 10000 });
+                        await sock.sendMessage(chatId, { image: Buffer.from(response.data) }, { quoted: message });
+                        return;
+                    } catch (err) {
+                        console.log(`Failed API: ${apiUrl}`);
+                        continue;
+                    }
+                }
+
+                // If all APIs fail, send appropriate pride text message
+                const prideMessages = {
+                    lgbt: '🏳️‍🌈 *LGBT Pride!* 🏳️‍🌈\n\n💖 Orgulho e amor sempre! ✨\n🌈 Love is Love! 💕',
+                    lesbian: '🏳️‍⚧️ *Lesbian Pride!* 🏳️‍⚧️\n\n💜 Orgulho lésbico! 🤍\n❤️ Amor entre mulheres! 🧡',
+                    gay: '🏳️‍🌈 *Gay Pride!* 🏳️‍🌈\n\n✨ Seja quem você é com orgulho! 🌈\n💖 Love is Love! 💕',
+                    bisexual: '💗 *Bisexual Pride!* 💜\n\n💙 Amo sem limites! ✨\n🌈 Bi e orgulhoso! 💕',
+                    transgender: '🏳️‍⚧️ *Trans Pride!* 🏳️‍⚧️\n\n💙 Orgulho trans! 💗\n🤍 Seja você mesmo! ✨',
+                    pansexual: '💗 *Pansexual Pride!* 💛\n\n💙 Amor sem barreiras! ✨\n🌈 Pan e orgulhoso! 💕',
+                    nonbinary: '💛 *Non-Binary Pride!* 🤍\n\n💜 Além do binário! ✨\n🖤 Orgulho NB! 🌈',
+                    asexual: '🖤 *Asexual Pride!* 🤍\n\n💜 Válido e amado! ✨\n🌈 Orgulho ace! 💕'
+                };
+
+                await sock.sendMessage(chatId, {
+                    text: prideMessages[endpoint] || prideMessages.lgbt
+                }, { quoted: message });
+
+            } else {
+                url = `https://api.some-random-api.com/canvas/misc/${endpoint}?avatar=${encodeURIComponent(avatarUrl)}`;
+                const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
+                await sock.sendMessage(chatId, { image: Buffer.from(response.data) }, { quoted: message });
+            }
+        } catch (error) {
+            console.error(`Error in ${endpoint}:`, error);
+            if (['lgbt', 'lesbian', 'nonbinary', 'pansexual', 'transgender', 'bisexual', 'asexual', 'gay'].includes(endpoint)) {
+                const prideMessages = {
+                    lgbt: '🏳️‍🌈 *LGBT Pride!* 🏳️‍🌈\n\n💖 Orgulho e amor sempre! ✨\n🌈 Love is Love! 💕',
+                    lesbian: '🏳️‍⚧️ *Lesbian Pride!* 🏳️‍⚧️\n\n💜 Orgulho lésbico! 🤍\n❤️ Amor entre mulheres! 🧡',
+                    gay: '🏳️‍🌈 *Gay Pride!* 🏳️‍🌈\n\n✨ Seja quem você é com orgulho! 🌈\n💖 Love is Love! 💕',
+                    bisexual: '💗 *Bisexual Pride!* 💜\n\n💙 Amo sem limites! ✨\n🌈 Bi e orgulhoso! 💕',
+                    transgender: '🏳️‍⚧️ *Trans Pride!* 🏳️‍⚧️\n\n💙 Orgulho trans! 💗\n🤍 Seja você mesmo! ✨',
+                    pansexual: '💗 *Pansexual Pride!* 💛\n\n💙 Amor sem barreiras! ✨\n🌈 Pan e orgulhoso! 💕',
+                    nonbinary: '💛 *Non-Binary Pride!* 🤍\n\n💜 Além do binário! ✨\n🖤 Orgulho NB! 🌈',
+                    asexual: '🖤 *Asexual Pride!* 🤍\n\n💜 Válido e amado! ✨\n🌈 Orgulho ace! 💕'
+                };
+                await sock.sendMessage(chatId, {
+                    text: prideMessages[endpoint] || prideMessages.lgbt
+                }, { quoted: message });
+            } else {
+                await sock.sendMessage(chatId, {
+                    text: `❌ Erro ao gerar imagem ${endpoint}. Tente novamente mais tarde.`
+                }, { quoted: message });
+            }
+        }
     }
 
     try {
@@ -77,7 +140,13 @@ async function miscCommand(sock, chatId, message, args) {
                 await simpleAvatarOnly('circle');
                 break;
             case 'lgbt':
-                await simpleAvatarOnly('lgbt');
+            case 'lesbian':
+            case 'nonbinary':
+            case 'pansexual':
+            case 'transgender':
+            case 'bisexual':
+            case 'asexual':
+                await simpleAvatarOnly(sub);
                 break;
             case 'lied':
                 await simpleAvatarOnly('lied');
@@ -95,7 +164,7 @@ async function miscCommand(sock, chatId, message, args) {
             case 'its-so-stupid': {
                 const dog = rest.join(' ').trim();
                 if (!dog) {
-                    await sock.sendMessage(chatId, { text: 'Uso: .misc its-so-stupid <texto>' }, { quoted: message });
+                    await sock.sendMessage(chatId, { text: '🤡 *Uso:* `.misc its-so-stupid <texto>`\n\n📝 *Exemplo:* `.misc its-so-stupid sou burro`' }, { quoted: message });
                     return;
                 }
                 const avatarUrl = await getQuotedOrOwnImageUrl(sock, message);
@@ -176,16 +245,69 @@ async function miscCommand(sock, chatId, message, args) {
             case 'jail':
             case 'passed':
             case 'triggered': {
-                const avatarUrl = await getQuotedOrOwnImageUrl(sock, message);
-                const overlay = sub; // same name for path
-                const url = `https://api.some-random-api.com/canvas/overlay/${overlay}?avatar=${encodeURIComponent(avatarUrl)}`;
-                const response = await axios.get(url, { responseType: 'arraybuffer' });
-                await sock.sendMessage(chatId, { image: Buffer.from(response.data) }, { quoted: message });
+                try {
+                    const avatarUrl = await getQuotedOrOwnImageUrl(sock, message);
+                    const overlay = sub;
+
+                    // Special handling for gay command with fallback
+                    if (sub === 'gay') {
+                        const apis = [
+                            `https://some-random-api.com/canvas/overlay/gay?avatar=${encodeURIComponent(avatarUrl)}`,
+                            `https://api.some-random-api.com/canvas/overlay/${overlay}?avatar=${encodeURIComponent(avatarUrl)}`,
+                            `https://some-random-api.com/canvas/misc/lgbt?avatar=${encodeURIComponent(avatarUrl)}`
+                        ];
+
+                        for (const apiUrl of apis) {
+                            try {
+                                const response = await axios.get(apiUrl, { responseType: 'arraybuffer', timeout: 10000 });
+                                await sock.sendMessage(chatId, { image: Buffer.from(response.data) }, { quoted: message });
+                                return;
+                            } catch (err) {
+                                console.log(`Failed Gay API: ${apiUrl}`);
+                                continue;
+                            }
+                        }
+
+                        // If all APIs fail, send rainbow text message
+                        await sock.sendMessage(chatId, {
+                            text: '🏳️‍🌈 *Gay Pride!* 🏳️‍🌈\n\n✨ Seja quem você é com orgulho! 🌈\n💖 Love is Love! 💕\n🎉 Celebre o amor! 🎊'
+                        }, { quoted: message });
+
+                    } else {
+                        const url = `https://api.some-random-api.com/canvas/overlay/${overlay}?avatar=${encodeURIComponent(avatarUrl)}`;
+                        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
+                        await sock.sendMessage(chatId, { image: Buffer.from(response.data) }, { quoted: message });
+                    }
+                } catch (error) {
+                    console.error(`Error in overlay ${sub}:`, error);
+                    if (sub === 'gay') {
+                        await sock.sendMessage(chatId, {
+                            text: '🏳️‍🌈 *Gay Pride!* 🏳️‍🌈\n\n✨ Seja quem você é com orgulho! 🌈\n💖 Love is Love! 💕\n🎉 Celebre o amor! 🎊'
+                        }, { quoted: message });
+                    } else {
+                        await sock.sendMessage(chatId, {
+                            text: `❌ Erro ao gerar overlay ${sub}. Tente novamente mais tarde.`
+                        }, { quoted: message });
+                    }
+                }
                 break;
             }
 
             default:
-                await sock.sendMessage(chatId, { text: 'Uso: .misc <heart|horny|circle|lgbt|lesbian|nonbinary|pansexual|transgender|lied|lolice|simpcard|tonikawa|its-so-stupid <texto>|namecard u|b|d?|nobitches <texto>|oogway <citação>|oogway2 <citação>|tweet dn|un|c|tema?|youtube-comment un|c>' }, { quoted: message });
+                await sock.sendMessage(chatId, {
+                    text: '🎨 *Comandos Misc Disponíveis:* 🎨\n\n' +
+                          '💕 **Filtros:** heart, horny, circle\n' +
+                          '🏳️‍🌈 **LGBT+:** lgbt, gay, lesbian, bisexual, transgender, pansexual, nonbinary, asexual\n' +
+                          '😂 **Memes:** lied, lolice, simpcard, tonikawa\n' +
+                          '🎭 **Overlays:** comrade, glass, jail, passed, triggered\n' +
+                          '📝 **Com Texto:**\n' +
+                          '• `.misc its-so-stupid <texto>`\n' +
+                          '• `.misc namecard nome|aniversário|descrição`\n' +
+                          '• `.misc oogway <citação>`\n' +
+                          '• `.misc tweet nome|@user|texto|tema`\n' +
+                          '• `.misc youtube-comment user|texto`\n\n' +
+                          '💡 *Use com imagem, mention ou reply!*'
+                }, { quoted: message });
                 break;
         }
     } catch (error) {
