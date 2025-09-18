@@ -55,18 +55,36 @@ setInterval(() => store.writeToFile(), settings.storeWriteInterval || 10000)
 
 // Memory optimization - Force garbage collection if available
 setInterval(() => {
+    const memUsage = process.memoryUsage().rss / 1024 / 1024;
     if (global.gc) {
-        global.gc()
-        console.log('🧹 Garbage collection completed')
+        global.gc();
+        const memAfter = process.memoryUsage().rss / 1024 / 1024;
+        console.log(`🧹 Garbage collection: ${memUsage.toFixed(2)}MB → ${memAfter.toFixed(2)}MB`);
+    } else {
+        console.log(`📊 Current memory usage: ${memUsage.toFixed(2)}MB`);
     }
 }, 60_000) // every 1 minute
 
 // Memory monitoring - Restart if RAM gets too high
 setInterval(() => {
-    const used = process.memoryUsage().rss / 1024 / 1024
-    if (used > 200) {
-        console.log('⚠️ RAM too high (>200MB), restarting bot...')
-        process.exit(1) // Panel will auto-restart
+    const used = process.memoryUsage().rss / 1024 / 1024;
+
+    if (used > 400) {
+        console.log('⚠️ RAM too high (>400MB), restarting bot...');
+        // Tentar limpeza de emergência antes de reiniciar
+        if (global.gc) {
+            console.log('🚨 Tentando limpeza de emergência...');
+            global.gc();
+            const afterCleanup = process.memoryUsage().rss / 1024 / 1024;
+            if (afterCleanup < 350) {
+                console.log(`✅ Limpeza bem-sucedida: ${used.toFixed(2)}MB → ${afterCleanup.toFixed(2)}MB`);
+                return; // Evitar reinicialização se a limpeza funcionou
+            }
+        }
+        process.exit(1); // Panel will auto-restart
+    } else if (used > 300) {
+        console.log(`⚠️ RAM moderadamente alta: ${used.toFixed(2)}MB - Forçando limpeza preventiva`);
+        if (global.gc) global.gc();
     }
 }, 30_000) // check every 30 seconds
 
@@ -133,22 +151,56 @@ async function startXeonBotInc() {
 
             // Clear message retry cache to prevent memory bloat
             if (XeonBotInc?.msgRetryCounterCache) {
-                XeonBotInc.msgRetryCounterCache.clear()
+                XeonBotInc.msgRetryCounterCache.clear();
+            }
+
+            // Limpeza adicional de memória para mensagens pesadas
+            const messageSize = JSON.stringify(mek).length;
+            if (messageSize > 10000) { // Mensagens grandes (>10KB)
+                console.log(`📦 Mensagem grande detectada: ${messageSize} bytes`);
+                if (global.gc) {
+                    setTimeout(() => global.gc(), 1000);
+                }
             }
 
             try {
-                await handleMessages(XeonBotInc, chatUpdate, true)
+                await handleMessages(XeonBotInc, chatUpdate, true);
             } catch (err) {
-                console.error("Error in handleMessages:", err)
+                console.error("Error in handleMessages:", err);
+
+                // Verificar se o erro é relacionado à memória
+                if (err.message && (err.message.includes('memory') || err.message.includes('ENOMEM'))) {
+                    console.log('🚨 Erro de memória detectado, forçando limpeza...');
+                    if (global.gc) {
+                        global.gc();
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
                 // Only try to send error message if we have a valid chatId
                 if (mek.key && mek.key.remoteJid) {
-                    await XeonBotInc.sendMessage(mek.key.remoteJid, {
-                        text: '❌ An error occurred while processing your message.'
-                    }).catch(console.error);
+                    try {
+                        await XeonBotInc.sendMessage(mek.key.remoteJid, {
+                            text: '❌ Ocorreu um erro ao processar sua mensagem. Tente novamente em alguns segundos.'
+                        });
+                    } catch (sendErr) {
+                        console.error('Erro ao enviar mensagem de erro:', sendErr.message);
+                    }
                 }
             }
         } catch (err) {
-            console.error("Error in messages.upsert:", err)
+            console.error("Error in messages.upsert:", err);
+
+            // Tratamento especial para erros críticos
+            if (err.message && err.message.includes('FATAL')) {
+                console.log('🚨 Erro fatal detectado, reiniciando em 5 segundos...');
+                setTimeout(() => process.exit(1), 5000);
+            }
+
+            // Forçar limpeza em caso de erro
+            if (global.gc) {
+                setTimeout(() => global.gc(), 2000);
+            }
         }
     })
 
@@ -379,11 +431,39 @@ startXeonBotInc().catch(error => {
     process.exit(1)
 })
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err)
+    console.error('🚨 Uncaught Exception:', err);
+
+    // Tentar limpeza de emergência
+    if (global.gc) {
+        try {
+            global.gc();
+            console.log('🧹 Limpeza de emergência executada');
+        } catch (gcErr) {
+            console.error('Erro na limpeza de emergência:', gcErr.message);
+        }
+    }
+
+    // Dar tempo para limpeza antes de sair
+    setTimeout(() => {
+        console.log('🔄 Reiniciando devido a erro crítico...');
+        process.exit(1);
+    }, 3000);
 })
 
 process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Rejection:', err)
+    console.error('⚠️ Unhandled Rejection:', err);
+
+    // Não sair imediatamente para rejeições, apenas logar e limpar
+    if (global.gc) {
+        setTimeout(() => {
+            try {
+                global.gc();
+                console.log('🧹 Limpeza após rejeição executada');
+            } catch (gcErr) {
+                console.error('Erro na limpeza após rejeição:', gcErr.message);
+            }
+        }, 1000);
+    }
 })
 
 let file = require.resolve(__filename)

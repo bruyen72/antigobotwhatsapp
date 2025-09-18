@@ -2,10 +2,10 @@ const { chromium } = require('playwright');
 const axios = require('axios');
 const https = require('https');
 
-// Cache de imagens para não buscar toda vez
+// Cache de imagens para não buscar toda vez - otimizado
 let cachedImages = [];
 let lastFetch = 0;
-const CACHE_DURATION = 3600000; // 1 hora em milissegundos
+const CACHE_DURATION = 1800000; // 30 minutos em milissegundos (reduzido para economizar memória)
 
 // Credenciais do Pinterest (Use variáveis de ambiente!)
 const PINTEREST_EMAIL = process.env.PINTEREST_EMAIL || 'brunoruthes92@gmail.com';
@@ -43,7 +43,11 @@ async function fetchAnimeShipImages() {
                 '--disable-gpu',
                 '--single-process',
                 '--disable-web-security',
-                '--disable-features=VizDisplayCompositor'
+                '--disable-features=VizDisplayCompositor',
+                '--memory-pressure-off',
+                '--max_old_space_size=128',
+                '--disable-background-timer-throttling',
+                '--disable-renderer-backgrounding'
             ]
         });
         
@@ -84,10 +88,10 @@ async function fetchAnimeShipImages() {
             // Aguardar carregar
             await page.waitForTimeout(3000);
 
-            // Scroll para carregar mais imagens
-            for (let i = 0; i < 3; i++) {
+            // Scroll para carregar mais imagens (reduzido para economizar memória)
+            for (let i = 0; i < 2; i++) {
                 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-                await page.waitForTimeout(1500);
+                await page.waitForTimeout(1000);
             }
 
             // Extrair links das imagens do Pinterest
@@ -101,7 +105,7 @@ async function fetchAnimeShipImages() {
                         // Tentar obter a versão original
                         src = src.replace(/\/\d+x\d*\//, '/originals/');
                         src = src.replace(/_\d+x\d*\./, '.');
-                        if (!links.includes(src) && links.length < 30) {
+                        if (!links.includes(src) && links.length < 15) {
                             links.push(src);
                         }
                     }
@@ -152,7 +156,7 @@ async function fetchAnimeShipImages() {
                 }
             });
 
-            cachedImages = validImages.slice(0, 20); // Limitar a 20 imagens
+            cachedImages = validImages.slice(0, 10); // Limitar a 10 imagens (reduzido para economizar memória)
             lastFetch = Date.now();
             console.log(`✅ Total: ${cachedImages.length} imagens válidas coletadas!`);
             return cachedImages;
@@ -165,9 +169,29 @@ async function fetchAnimeShipImages() {
         console.log('🔄 Usando imagens de fallback...');
         return FALLBACK_IMAGES;
     } finally {
-        if (page) await page.close().catch(() => {});
-        if (context) await context.close().catch(() => {});
-        if (browser) await browser.close().catch(() => {});
+        // Forçar limpeza de memória
+        try {
+            if (page) {
+                await page.evaluate(() => {
+                    // Limpar cache do navegador
+                    if (window.caches) {
+                        caches.keys().then(names => {
+                            names.forEach(name => caches.delete(name));
+                        });
+                    }
+                });
+                await page.close();
+            }
+            if (context) await context.close();
+            if (browser) await browser.close();
+        } catch (e) {
+            console.warn('⚠️ Erro ao fechar browser:', e.message);
+        }
+
+        // Forçar garbage collection se disponível
+        if (global.gc) {
+            global.gc();
+        }
     }
 }
 
@@ -239,6 +263,11 @@ async function downloadImage(url, retries = 3) {
                 await context.close();
                 await browser.close();
 
+                // Forçar limpeza de memória
+                if (global.gc) {
+                    global.gc();
+                }
+
             } catch (playwrightError) {
                 console.warn(`⚠️ Playwright também falhou (tentativa ${attempt}):`, playwrightError.message);
             }
@@ -254,6 +283,37 @@ async function downloadImage(url, retries = 3) {
 }
 
 async function shipCommand(sock, chatId, message, args) {
+    // Verificar memória antes de executar
+    const memBefore = process.memoryUsage().rss / 1024 / 1024;
+    if (memBefore > 350) {
+        console.log('🚨 Memória alta antes do ship, forçando limpeza...');
+        if (global.gc) global.gc();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Timeout de segurança para evitar travamentos
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Ship command timeout')), 45000); // 45 segundos
+    });
+
+    try {
+        return await Promise.race([
+            shipCommandInternal(sock, chatId, message, args),
+            timeoutPromise
+        ]);
+    } catch (error) {
+        if (error.message === 'Ship command timeout') {
+            console.error('⏰ Ship command timeout - enviando mensagem de erro');
+            await sock.sendMessage(chatId, {
+                text: '⏰ *Ship Timeout*\n\nO comando demorou muito para responder. Tente novamente em alguns minutos.\n\n💡 *Dica:* Use `.ship @user1 @user2` para ship direto!'
+            }).catch(console.error);
+        } else {
+            throw error;
+        }
+    }
+}
+
+async function shipCommandInternal(sock, chatId, message, args) {
     try {
         let user1, user2;
         
@@ -372,6 +432,16 @@ ${emoji} @${user1.split('@')[0]} ❤️ @${user2.split('@')[0]}
         });
 
         console.log('✅ Ship enviado com sucesso!');
+
+        // Verificar memória após execução
+        const memAfter = process.memoryUsage().rss / 1024 / 1024;
+        console.log(`📊 Memória após ship: ${memAfter.toFixed(2)}MB`);
+
+        // Forçar limpeza se necessário
+        if (memAfter > 300 && global.gc) {
+            global.gc();
+            console.log('🧹 Limpeza de memória forçada após ship');
+        }
 
     } catch (error) {
         console.error('❌ Erro geral no comando ship:', error.message);
