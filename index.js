@@ -17,6 +17,7 @@ const FileType = require('file-type')
 const path = require('path')
 const axios = require('axios')
 const { handleMessages, handleGroupParticipantUpdate, handleStatus } = require('./main');
+const { setBotInstance, updateQR } = require('./server');
 const PhoneNumber = require('awesome-phonenumber')
 const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = require('./lib/exif')
 const { smsg, isUrl, generateMessageTag, getBuffer, getSizeMedia, fetch, await, sleep, reSize } = require('./lib/myfunc')
@@ -136,6 +137,9 @@ async function startXeonBotInc() {
     })
 
     store.bind(XeonBotInc.ev)
+
+    // Set bot instance for web server
+    setBotInstance(XeonBotInc);
 
     // Message handling
     XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
@@ -312,9 +316,15 @@ async function startXeonBotInc() {
 
     // Connection handling
     XeonBotInc.ev.on('connection.update', async (s) => {
-        const { connection, lastDisconnect } = s
+        const { connection, lastDisconnect, qr } = s
         console.log(chalk.magenta(`[DEBUG] *** CONNECTION UPDATE EVENT *** : ${connection}`))
         console.log(chalk.magenta(`[DEBUG] Event data:`, JSON.stringify(s, null, 2)))
+
+        // Update QR code for web interface
+        if (qr) {
+            updateQR(qr);
+            console.log(chalk.cyan('📱 QR Code disponível na interface web'));
+        }
 
         // Solicitar pairing code apenas uma vez quando conectando
         if (connection === 'connecting' && pairingCode && global.pairingPhoneNumber && !XeonBotInc.authState.creds.registered) {
