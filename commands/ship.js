@@ -34,7 +34,7 @@ async function fetchAnimeShipImages() {
 
         console.log('🔍 Buscando imagens de anime ships...');
         
-        browser = await chromium.launch({ 
+        browser = await chromium.launch({
             headless: true,
             args: [
                 '--no-sandbox',
@@ -203,33 +203,42 @@ async function downloadImage(url, retries = 3) {
             
             // Fallback: usar Playwright para download
             try {
-                const browser = await chromium.launch({ headless: true });
+                const browser = await chromium.launch({
+                    headless: true,
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu',
+                        '--single-process'
+                    ]
+                });
                 const context = await browser.newContext({
                     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 });
                 const page = await context.newPage();
-                
-                const imageResponse = await page.goto(url, { 
-                    waitUntil: 'networkidle', 
-                    timeout: 8000 
+
+                const imageResponse = await page.goto(url, {
+                    waitUntil: 'networkidle',
+                    timeout: 8000
                 });
-                
+
                 if (imageResponse && imageResponse.ok()) {
                     const buffer = await imageResponse.body();
                     await page.close();
                     await context.close();
                     await browser.close();
-                    
+
                     if (buffer && buffer.length > 1000) {
                         console.log('✅ Imagem baixada com sucesso via Playwright!');
                         return buffer;
                     }
                 }
-                
+
                 await page.close();
                 await context.close();
                 await browser.close();
-                
+
             } catch (playwrightError) {
                 console.warn(`⚠️ Playwright também falhou (tentativa ${attempt}):`, playwrightError.message);
             }

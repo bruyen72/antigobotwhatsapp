@@ -15,7 +15,12 @@
       "Bash(git push:*)",
       "Bash(curl:*)",
       "Bash(git remote remove:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx playwright:*)",
+      "Bash(apt list:*)",
+      "Bash(sudo apt-get:*)",
+      "Read(//root/.cache/ms-playwright/**)"
     ],
     "deny": [],
     "ask": []
