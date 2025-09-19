@@ -4,7 +4,7 @@ import { webcrypto } from 'node:crypto';
 if (!global.crypto) global.crypto = webcrypto;
 
 import QRCode from 'qrcode';
-import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from '@whiskeysockets/baileys';
+import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from 'baileys';
 import P from 'pino';
 
 const logger = P({ level: 'silent' });
