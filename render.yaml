@@ -1,14 +1,31 @@
 services:
   - type: web
-    name: knight-bot-web
-    env: docker
+    name: knight-bot-whatsapp
+    env: node
     plan: free
-    dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/status
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: RENDER
-        value: "true"
       - key: PORT
-        value: "10000"
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: knight-bot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: knight-bot-redis
+          property: connectionString
+
+databases:
+  - name: knight-bot-db
+    databaseName: knight_bot
+    user: knight_bot_user
+    plan: free
+
+  - name: knight-bot-redis
+    plan: free

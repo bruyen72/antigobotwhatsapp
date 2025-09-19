@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { initializeDatabase, closeDatabaseConnections } from './lib/database-auth-state.js';
 
 // Import API handlers
 import statusHandler from './api/status.js';
@@ -71,10 +72,13 @@ app.get('/', (req, res) => {
 });
 
 // Start server com configurações para Render
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Knight Bot server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+
+  // Inicializar banco de dados
+  await initializeDatabase();
 });
 
 // Configurações para evitar timeout no Render
@@ -82,18 +86,20 @@ server.keepAliveTimeout = 120000; // 2 minutos
 server.headersTimeout = 120000; // 2 minutos
 
 // Evitar que o processo morra no Render
-process.on('SIGTERM', () => {
-  console.log('💾 SIGTERM recebido, mantendo conexões WhatsApp...');
+process.on('SIGTERM', async () => {
+  console.log('💾 SIGTERM recebido, fechando conexões...');
+  await closeDatabaseConnections();
   setTimeout(() => {
     console.log('🔄 Finalizando graciosamente...');
     process.exit(0);
-  }, 30000); // 30 segundos para finalizar conexões
+  }, 10000); // 10 segundos para finalizar
 });
 
-process.on('SIGINT', () => {
-  console.log('💾 SIGINT recebido, mantendo conexões WhatsApp...');
+process.on('SIGINT', async () => {
+  console.log('💾 SIGINT recebido, fechando conexões...');
+  await closeDatabaseConnections();
   setTimeout(() => {
     console.log('🔄 Finalizando graciosamente...');
     process.exit(0);
-  }, 30000);
+  }, 10000);
 });
