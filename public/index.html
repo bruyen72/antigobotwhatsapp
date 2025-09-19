@@ -341,8 +341,11 @@
     </div>
 
     <div class="input-group" id="inputGroup">
-      <label class="input-label">Digite seu número do WhatsApp com código do país</label>
-      <input type="text" id="mobileNumber" class="input-field" placeholder="+5565984660212" pattern="[+][0-9]{10,}" title="Por favor digite o código do país começando com + seguido do número">
+      <label class="input-label">Digite seu número do WhatsApp (sem +)</label>
+      <input type="text" id="mobileNumber" class="input-field" placeholder="5565984660212" pattern="[0-9]{10,}" title="Digite apenas números: código do país + DDD + número">
+      <div style="font-size: 12px; color: #666; margin-top: 4px;">
+        Exemplo Brasil: 5565984660212 (55 + 65 + 984660212)
+      </div>
     </div>
 
     <button class="generate-btn" id="submit">
@@ -367,6 +370,12 @@
     <button class="copy-btn" id="copy" onclick="copyCode()">
       <i class="fas fa-copy"></i> Copiar Código
     </button>
+
+    <div style="text-align: center; margin: 20px 0;">
+      <a href="/instructions.html" style="color: #000; text-decoration: none; font-size: 14px; border: 1px solid #000; padding: 8px 16px; border-radius: 8px; display: inline-block;">
+        <i class="fas fa-question-circle"></i> Guia Completo de Conexão
+      </a>
+    </div>
 
     <div class="footer">
       <p>© 2025 Mr Unique Hacker | Knight Bot Brasil</p>
@@ -424,18 +433,40 @@
       try {
         const response = await axios('/api/qr');
 
-        if (response.data.qr) {
+        if (response.data.success && response.data.qr) {
           document.getElementById('qrImage').src = response.data.qr;
-          document.getElementById('qrInstructions').innerHTML = response.data.instructions.join('<br>');
+          document.getElementById('qrInstructions').innerHTML = `
+            <strong>QR Code Real do WhatsApp</strong><br><br>
+            ${response.data.instructions.join('<br>')}
+            <br><br>
+            <small style="color: #666;">
+              Expira em: ${response.data.expiresIn || '20 segundos'}<br>
+              Gerado em: ${new Date().toLocaleTimeString()}
+            </small>
+          `;
           qrDisplay.style.display = 'block';
           codeDisplay.style.display = 'none';
+
+          // Auto-refresh QR code após expirar
+          setTimeout(() => {
+            if (currentMode === 'qr') {
+              generateQRCode();
+            }
+          }, 25000); // Refresh após 25 segundos
         } else {
-          codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Falha ao gerar código QR</div>';
+          const errorMsg = response.data.error || 'Falha ao gerar código QR';
+          codeDisplay.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${errorMsg}</div>`;
           codeDisplay.style.display = 'flex';
         }
       } catch (error) {
         console.error("Error generating QR code:", error);
-        codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Erro ao gerar código QR. Tente novamente.</div>';
+        let errorMessage = "Erro ao gerar código QR. Tente novamente.";
+
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+
+        codeDisplay.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${errorMessage}</div>`;
         codeDisplay.style.display = 'flex';
       } finally {
         loadingSpinner.style.display = "none";
@@ -461,23 +492,107 @@
       qrDisplay.style.display = 'none';
 
       try {
-        const response = await axios(`/api/pair?number=${mobileNumber.replace(/[^0-9]/g, "")}`);
+        // Validar formato antes de enviar
+        const cleanNumber = mobileNumber.replace(/[^0-9]/g, "");
+        if (cleanNumber.length < 10) {
+          codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Número muito curto. Mínimo 10 dígitos.</div>';
+          codeDisplay.style.display = 'flex';
+          return;
+        }
 
-        const code = response.data.code || "Serviço Indisponível";
-        if (code === "Serviço Indisponível" || code === "Service Unavailable") {
-          codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Serviço Indisponível</div>';
+        const response = await axios(`/api/pair?number=${cleanNumber}`);
+
+        if (response.data.success && response.data.code) {
+          const code = response.data.code;
+          const sessionId = response.data.sessionId;
+
+          codeDisplay.innerHTML = `
+            <div class="success-message">
+              <i class="fas fa-check-circle"></i> CÓDIGO: ${code}
+            </div>
+            <div style="font-size: 12px; margin-top: 8px; color: #666;">
+              Status: Aguardando pareamento no celular<br>
+              Sessão: ${sessionId}
+            </div>
+          `;
+
+          // Começar monitoramento da sessão
+          startSessionMonitoring(sessionId);
         } else {
-          codeDisplay.innerHTML = `<div class="success-message"><i class="fas fa-check-circle"></i> CÓDIGO: ${code}</div>`;
+          const errorMsg = response.data.error || "Erro desconhecido";
+          codeDisplay.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${errorMsg}</div>`;
         }
         codeDisplay.style.display = 'flex';
       } catch (error) {
         console.error("Error generating code:", error);
-        codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Erro ao gerar código. Tente novamente.</div>';
+        let errorMessage = "Erro ao gerar código. Tente novamente.";
+
+        if (error.response?.status === 429) {
+          errorMessage = "Muitas tentativas. Aguarde um minuto.";
+        } else if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+
+        codeDisplay.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${errorMessage}</div>`;
         codeDisplay.style.display = 'flex';
       } finally {
         loadingSpinner.style.display = "none";
       }
     });
+
+    // Função para monitorar status da sessão em tempo real
+    let monitoringInterval = null;
+
+    function startSessionMonitoring(sessionId) {
+      if (monitoringInterval) clearInterval(monitoringInterval);
+
+      monitoringInterval = setInterval(async () => {
+        try {
+          const response = await axios(`/api/status-session?sessionId=${sessionId}`);
+
+          if (response.data.success) {
+            const session = response.data.session;
+            const statusDiv = document.querySelector('.success-message').parentElement;
+
+            if (session.connected) {
+              statusDiv.innerHTML = `
+                <div class="success-message">
+                  <i class="fas fa-check-circle"></i> ✅ CONECTADO COM SUCESSO!
+                </div>
+                <div style="font-size: 12px; margin-top: 8px; color: #28a745;">
+                  WhatsApp pareado e ativo<br>
+                  Número: ${session.phoneNumber}
+                </div>
+              `;
+              clearInterval(monitoringInterval);
+            } else if (session.displayStatus.includes('Aguardando')) {
+              const timeAgo = Math.floor(session.ageMinutes);
+              statusDiv.innerHTML = `
+                <div class="success-message">
+                  <i class="fas fa-clock"></i> CÓDIGO: ${session.pairingCode}
+                </div>
+                <div style="font-size: 12px; margin-top: 8px; color: #666;">
+                  Status: ${session.displayStatus}<br>
+                  Há ${timeAgo} minutos | Expira em ${15 - timeAgo} min
+                </div>
+              `;
+            }
+          }
+        } catch (error) {
+          console.log('Erro no monitoramento:', error);
+          // Continuar tentando
+        }
+      }, 5000); // Verificar a cada 5 segundos
+
+      // Parar monitoramento após 15 minutos
+      setTimeout(() => {
+        if (monitoringInterval) {
+          clearInterval(monitoringInterval);
+          monitoringInterval = null;
+        }
+      }, 15 * 60 * 1000);
+    }
+
     function copyCode() {
       const codeDisplay = document.getElementById("codeDisplay").innerText;
       const code = codeDisplay.replace('CÓDIGO: ', '').replace('CODE: ', '');

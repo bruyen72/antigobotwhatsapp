@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knight Bot - Instruções de Conexão</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      background: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+    }
+    h1 { color: #000; margin-bottom: 8px; }
+    h2 { color: #333; margin-top: 30px; margin-bottom: 15px; }
+    .method {
+      background: #f8f9fa;
+      border-left: 4px solid #000;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    .step {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .step-number {
+      background: #000;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    .code {
+      background: #f1f3f4;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 14px;
+      display: inline-block;
+    }
+    .api-link {
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo"><i class="fas fa-robot"></i></div>
+      <h1>Knight Bot - Guia de Conexão</h1>
+      <p>Como conectar seu WhatsApp ao bot com sucesso</p>
+    </div>
+
+    <div class="method">
+      <h2><i class="fas fa-key"></i> Método 1: Código de Pareamento (Recomendado)</h2>
+
+      <div class="step">
+        <span class="step-number">1</span>
+        <strong>Digite seu número</strong><br>
+        Insira apenas números: <span class="code">5565984660212</span><br>
+        <small>Formato: Código do país (55) + DDD (65) + número (984660212)</small>
+      </div>
+
+      <div class="step">
+        <span class="step-number">2</span>
+        <strong>Clique em "Gerar Código"</strong><br>
+        O sistema criará um código de 8 letras como: <span class="code">ABCD1234</span>
+      </div>
+
+      <div class="step">
+        <span class="step-number">3</span>
+        <strong>No seu celular WhatsApp</strong><br>
+        • Vá em <strong>Configurações</strong> (⚙️)<br>
+        • Toque em <strong>Aparelhos conectados</strong><br>
+        • Selecione <strong>Conectar um aparelho</strong><br>
+        • Escolha <strong>Vincular com número do telefone</strong>
+      </div>
+
+      <div class="step">
+        <span class="step-number">4</span>
+        <strong>Digite o código</strong><br>
+        Insira o código de 8 letras que apareceu na tela<br>
+        <small>O código é válido por 15 minutos</small>
+      </div>
+
+      <div class="success">
+        <i class="fas fa-check-circle"></i> <strong>Sucesso!</strong><br>
+        O status mudará para "CONECTADO COM SUCESSO" quando o pareamento funcionar.
+      </div>
+    </div>
+
+    <div class="method">
+      <h2><i class="fas fa-qrcode"></i> Método 2: Código QR</h2>
+
+      <div class="step">
+        <span class="step-number">1</span>
+        <strong>Selecione "Código QR"</strong><br>
+        Clique na aba QR Code na interface
+      </div>
+
+      <div class="step">
+        <span class="step-number">2</span>
+        <strong>Escaneie com WhatsApp</strong><br>
+        • Abra WhatsApp no celular<br>
+        • Vá em <strong>Menu</strong> → <strong>Aparelhos conectados</strong><br>
+        • Toque em <strong>Conectar um aparelho</strong><br>
+        • Escaneie o QR code que aparece
+      </div>
+
+      <div class="warning">
+        <i class="fas fa-exclamation-triangle"></i> <strong>Atenção:</strong><br>
+        QR codes expiram em 20 segundos e são renovados automaticamente.
+      </div>
+    </div>
+
+    <h2><i class="fas fa-bug"></i> Solução de Problemas</h2>
+
+    <div class="warning">
+      <strong>❌ "Não foi possível conectar dispositivo"</strong><br>
+      • Verifique se o número está no formato correto (sem + ou espaços)<br>
+      • Aguarde alguns segundos antes de tentar novamente<br>
+      • Use números brasileiros: 55 + DDD + número
+    </div>
+
+    <div class="warning">
+      <strong>❌ "Código expirado"</strong><br>
+      • Códigos de pareamento duram 15 minutos<br>
+      • Gere um novo código se passou do tempo<br>
+      • QR codes duram apenas 20 segundos
+    </div>
+
+    <div class="warning">
+      <strong>❌ "Muitas tentativas"</strong><br>
+      • Máximo 3 tentativas por número por minuto<br>
+      • Aguarde 1 minuto antes de tentar novamente
+    </div>
+
+    <h2><i class="fas fa-tools"></i> APIs de Monitoramento</h2>
+
+    <div class="api-link">
+      <strong>Monitorar todas as sessões:</strong><br>
+      <span class="code">/api/monitor</span>
+    </div>
+
+    <div class="api-link">
+      <strong>Status de uma sessão específica:</strong><br>
+      <span class="code">/api/status-session?sessionId=SEU_SESSION_ID</span>
+    </div>
+
+    <div class="api-link">
+      <strong>Testar nova implementação:</strong><br>
+      <span class="code">/api/test-connection</span>
+    </div>
+
+    <h2><i class="fas fa-mobile-alt"></i> Formatos de Número Aceitos</h2>
+
+    <div class="step">
+      <strong>✅ Correto:</strong><br>
+      • <span class="code">5565984660212</span> (Brasil)<br>
+      • <span class="code">15551234567</span> (EUA)<br>
+      • <span class="code">447911123456</span> (Reino Unido)
+    </div>
+
+    <div class="step">
+      <strong>❌ Incorreto:</strong><br>
+      • <span class="code">+5565984660212</span> (com +)<br>
+      • <span class="code">65 98466-0212</span> (com espaços)<br>
+      • <span class="code">(65) 98466-0212</span> (formatado)
+    </div>
+
+    <div class="success">
+      <i class="fas fa-info-circle"></i> <strong>Dica:</strong><br>
+      Use sempre números no formato E.164 sem o símbolo + para melhor compatibilidade.
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+      <p><strong>Knight Bot WhatsApp</strong> - Conexão Real e Confiável</p>
+      <p><small>© 2025 Mr Unique Hacker | Implementação com Baileys v6.7.8</small></p>
+    </div>
+  </div>
+</body>
+</html>
