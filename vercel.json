@@ -1,15 +1,41 @@
 {
   "version": 2,
   "functions": {
-    "start.js": {
+    "api/index.js": {
       "maxDuration": 60,
       "memory": 1024
     },
-    "api/**/*": {
-      "maxDuration": 60,
-      "memory": 1024
+    "api/qr.js": {
+      "maxDuration": 30,
+      "memory": 512
+    },
+    "api/pair.js": {
+      "maxDuration": 30,
+      "memory": 512
     }
   },
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/public/index.html"
+    },
+    {
+      "src": "/qr",
+      "dest": "/api/qr"
+    },
+    {
+      "src": "/pair",
+      "dest": "/api/pair"
+    },
+    {
+      "src": "/api",
+      "dest": "/api/index"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index"
+    }
+  ],
   "env": {
     "NODE_ENV": "production",
     "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1"
