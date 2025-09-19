@@ -9,7 +9,7 @@ console.log('🚀 Iniciando Knight Bot com Interface Web...\n');
 const { setBotInstance, updateQR, server } = require('./server');
 
 // Import and start the main bot
-const startBot = require('./index');
+require('./index');
 
 console.log('✅ Knight Bot com Interface Web iniciado com sucesso!');
 console.log(`🌐 Interface disponível em: http://localhost:${PORT}`);

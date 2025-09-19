@@ -1,4 +1,5 @@
-const { chromium } = require('playwright');
+const { chromium } = require('playwright-core');
+const chromiumPkg = require('@sparticuz/chromium');
 const axios = require('axios');
 const https = require('https');
 
@@ -34,37 +35,42 @@ async function fetchAnimeShipImages() {
 
         console.log('🔍 Buscando imagens de anime ships...');
 
-        // Verificar se estamos em ambiente Render
-        const isRender = process.env.RENDER || process.env.NODE_ENV === 'production';
-        if (isRender) {
-            console.log('🌐 Ambiente Render detectado, usando fallback images...');
-            return FALLBACK_IMAGES;
+        // Detectar ambiente serverless
+        const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.RENDER;
+
+        let browser;
+        if (isServerless) {
+            console.log('🌐 Ambiente serverless detectado, usando @sparticuz/chromium...');
+            browser = await chromium.launch({
+                args: chromiumPkg.args,
+                defaultViewport: chromiumPkg.defaultViewport,
+                executablePath: await chromiumPkg.executablePath(),
+                headless: chromiumPkg.headless,
+                ignoreHTTPSErrors: true,
+            });
+        } else {
+            console.log('💻 Ambiente local detectado, usando Playwright padrão...');
+            browser = await chromium.launch({
+                headless: true,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--single-process',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                    '--memory-pressure-off',
+                    '--max_old_space_size=128',
+                    '--disable-background-timer-throttling',
+                    '--disable-renderer-backgrounding',
+                    '--disable-extensions',
+                    '--disable-plugins'
+                ]
+            });
         }
-        
-        browser = await chromium.launch({
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--single-process',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
-                '--memory-pressure-off',
-                '--max_old_space_size=128',
-                '--disable-background-timer-throttling',
-                '--disable-renderer-backgrounding',
-                '--disable-extensions',
-                '--disable-plugins',
-                '--disable-images',
-                '--disable-javascript',
-                '--disable-default-apps'
-            ],
-            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined
-        });
-        
-        context = await browser.newContext({
+
+        const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             extraHTTPHeaders: {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -76,8 +82,8 @@ async function fetchAnimeShipImages() {
             },
             viewport: { width: 1366, height: 768 }
         });
-        
-        page = await context.newPage();
+
+        const page = await context.newPage();
 
         // Tentar múltiplas fontes de imagens
         const searchSources = [
@@ -93,41 +99,42 @@ async function fetchAnimeShipImages() {
         // Tentar Pinterest primeiro (sem login)
         try {
             console.log('🎯 Tentando Pinterest público...');
-            await page.goto(searchSources[0], { 
-                waitUntil: 'domcontentloaded', 
-                timeout: 15000 
+            await page.goto(searchSources[0], {
+                waitUntil: 'domcontentloaded',
+                timeout: isServerless ? 25000 : 15000 // Mais tempo em serverless
             });
 
             // Aguardar carregar
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(isServerless ? 5000 : 3000);
 
             // Scroll para carregar mais imagens (reduzido para economizar memória)
-            for (let i = 0; i < 2; i++) {
+            const scrolls = isServerless ? 1 : 2; // Menos scrolls em serverless
+            for (let i = 0; i < scrolls; i++) {
                 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-                await page.waitForTimeout(1000);
+                await page.waitForTimeout(1500);
             }
 
             // Extrair links das imagens do Pinterest
             imageLinks = await page.evaluate(() => {
                 const images = document.querySelectorAll('img[src*="pinimg.com"]');
                 const links = [];
-                
+
                 images.forEach(img => {
                     let src = img.src;
                     if (src && src.includes('pinimg.com') && !src.includes('avatar') && !src.includes('profile')) {
                         // Tentar obter a versão original
                         src = src.replace(/\/\d+x\d*\//, '/originals/');
                         src = src.replace(/_\d+x\d*\./, '.');
-                        if (!links.includes(src) && links.length < 15) {
+                        if (!links.includes(src) && links.length < (isServerless ? 8 : 15)) { // Menos imagens em serverless
                             links.push(src);
                         }
                     }
                 });
-                
+
                 return links;
             });
 
-            if (imageLinks.length > 5) {
+            if (imageLinks.length > 3) {
                 console.log(`✅ Pinterest: ${imageLinks.length} imagens encontradas`);
             } else {
                 throw new Error('Poucas imagens no Pinterest');
@@ -135,7 +142,7 @@ async function fetchAnimeShipImages() {
 
         } catch (pinterestError) {
             console.warn('⚠️ Pinterest falhou, usando fontes alternativas...');
-            
+
             // Usar APIs de imagens gratuitas como fallback
             const unsplashQueries = [
                 'anime couple',
@@ -169,7 +176,8 @@ async function fetchAnimeShipImages() {
                 }
             });
 
-            cachedImages = validImages.slice(0, 10); // Limitar a 10 imagens (reduzido para economizar memória)
+            const maxImages = isServerless ? 6 : 10; // Menos cache em serverless
+            cachedImages = validImages.slice(0, maxImages);
             lastFetch = Date.now();
             console.log(`✅ Total: ${cachedImages.length} imagens válidas coletadas!`);
             return cachedImages;
@@ -210,6 +218,8 @@ async function fetchAnimeShipImages() {
 
 // Função melhorada para download de imagem
 async function downloadImage(url, retries = 3) {
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.RENDER;
+
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             console.log(`📥 Tentativa ${attempt}: Baixando imagem...`);
@@ -238,51 +248,55 @@ async function downloadImage(url, retries = 3) {
         } catch (axiosError) {
             console.warn(`⚠️ Axios falhou (tentativa ${attempt}):`, axiosError.message);
             
-            // Fallback: usar Playwright para download
-            try {
-                const browser = await chromium.launch({
-                    headless: true,
-                    args: [
-                        '--no-sandbox',
-                        '--disable-setuid-sandbox',
-                        '--disable-dev-shm-usage',
-                        '--disable-gpu',
-                        '--single-process'
-                    ]
-                });
-                const context = await browser.newContext({
-                    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                });
-                const page = await context.newPage();
+            // Fallback com Playwright para servidores locais
+            if (!isServerless) {
+                try {
+                    const browser = await chromium.launch({
+                        headless: true,
+                        args: [
+                            '--no-sandbox',
+                            '--disable-setuid-sandbox',
+                            '--disable-dev-shm-usage',
+                            '--disable-gpu',
+                            '--single-process'
+                        ]
+                    });
+                    const context = await browser.newContext({
+                        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    });
+                    const page = await context.newPage();
 
-                const imageResponse = await page.goto(url, {
-                    waitUntil: 'networkidle',
-                    timeout: 8000
-                });
+                    const imageResponse = await page.goto(url, {
+                        waitUntil: 'networkidle',
+                        timeout: 8000
+                    });
 
-                if (imageResponse && imageResponse.ok()) {
-                    const buffer = await imageResponse.body();
+                    if (imageResponse && imageResponse.ok()) {
+                        const buffer = await imageResponse.body();
+                        await page.close();
+                        await context.close();
+                        await browser.close();
+
+                        if (buffer && buffer.length > 1000) {
+                            console.log('✅ Imagem baixada com sucesso via Playwright!');
+                            return buffer;
+                        }
+                    }
+
                     await page.close();
                     await context.close();
                     await browser.close();
 
-                    if (buffer && buffer.length > 1000) {
-                        console.log('✅ Imagem baixada com sucesso via Playwright!');
-                        return buffer;
+                    // Forçar limpeza de memória
+                    if (global.gc) {
+                        global.gc();
                     }
+
+                } catch (playwrightError) {
+                    console.warn(`⚠️ Playwright também falhou (tentativa ${attempt}):`, playwrightError.message);
                 }
-
-                await page.close();
-                await context.close();
-                await browser.close();
-
-                // Forçar limpeza de memória
-                if (global.gc) {
-                    global.gc();
-                }
-
-            } catch (playwrightError) {
-                console.warn(`⚠️ Playwright também falhou (tentativa ${attempt}):`, playwrightError.message);
+            } else {
+                console.warn(`⚠️ Fallback limitado em serverless (tentativa ${attempt})`);
             }
         }
         

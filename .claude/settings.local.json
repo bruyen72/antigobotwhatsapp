@@ -20,7 +20,8 @@
       "Bash(npx playwright:*)",
       "Bash(apt list:*)",
       "Bash(sudo apt-get:*)",
-      "Read(//root/.cache/ms-playwright/**)"
+      "Read(//root/.cache/ms-playwright/**)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
