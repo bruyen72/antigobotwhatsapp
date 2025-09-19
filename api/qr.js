@@ -1,7 +1,8 @@
 // API QR Code Real WhatsApp
 import QRCode from 'qrcode';
-import { makeWASocket, DisconnectReason, useMultiFileAuthState, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
 import P from 'pino';
+import { useMemoryAuthState } from '../lib/auth-state.js';
 
 const logger = P({ level: 'silent' });
 
@@ -18,8 +19,8 @@ export default async function handler(req, res) {
     const sessionId = `qr-session-${Date.now()}`;
     let qrCodeData = null;
 
-    // Create temporary auth state in memory for QR generation
-    const { state, saveCreds } = await useMultiFileAuthState(`./tmp/sessions/${sessionId}`);
+    // Use in-memory auth state for serverless
+    const { state, saveCreds } = useMemoryAuthState();
 
     const sock = makeWASocket({
       auth: {

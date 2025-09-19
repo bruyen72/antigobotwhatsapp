@@ -1,6 +1,7 @@
 // API de Pareamento WhatsApp Real
-import { makeWASocket, DisconnectReason, useMultiFileAuthState, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
 import P from 'pino';
+import { useMemoryAuthState } from '../lib/auth-state.js';
 
 const logger = P({ level: 'silent' });
 
@@ -59,8 +60,8 @@ export default async function handler(req, res) {
     // Gerar código real do WhatsApp usando Baileys
     const sessionId = `pair-session-${Date.now()}-${cleanNumber}`;
 
-    // Create temporary auth state for pairing
-    const { state, saveCreds } = await useMultiFileAuthState(`./tmp/sessions/${sessionId}`);
+    // Use in-memory auth state for serverless
+    const { state, saveCreds } = useMemoryAuthState();
 
     const sock = makeWASocket({
       auth: {
