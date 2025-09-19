@@ -1,14 +1,8 @@
 {
-  "name": "knightbot-minimal",
+  "name": "knight-bot-static",
   "version": "1.0.0",
-  "description": "WhatsApp Bot - Minimal Vercel Version",
-  "main": "index.js",
-  "type": "module",
+  "description": "Static Knight Bot Page",
   "scripts": {
-    "build": "echo 'Build completed'"
-  },
-  "dependencies": {},
-  "engines": {
-    "node": ">=18.0.0"
+    "build": "echo 'Static build completed'"
   }
 }
