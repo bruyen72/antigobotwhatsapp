@@ -1,11 +1,14 @@
 {
-  "name": "knight-bot-static",
+  "name": "knight-bot",
   "version": "1.0.0",
-  "description": "Static Knight Bot Page",
+  "description": "WhatsApp Bot with Real Functionality",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "echo 'Static build completed'",
+    "build": "echo 'Build completed'",
     "start": "node index.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
   }
 }
