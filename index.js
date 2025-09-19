@@ -10,6 +10,7 @@ import pairHandler from './api/pair.js';
 import sessionsHandler from './api/sessions.js';
 import monitorHandler from './api/monitor.js';
 import statusSessionHandler from './api/status-session.js';
+import testConnectionHandler from './api/test-connection.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,6 +30,7 @@ app.get('/api/pair', pairHandler);
 app.get('/api/sessions', sessionsHandler);
 app.get('/api/monitor', monitorHandler);
 app.get('/api/status-session', statusSessionHandler);
+app.get('/api/test-connection', testConnectionHandler);
 
 // Health check for Render - incluindo status das sessões WhatsApp
 app.get('/health', async (req, res) => {
