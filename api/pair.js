@@ -1,29 +1,5 @@
 // API de Pareamento WhatsApp Real
-// Polyfill crypto para Baileys
-import { webcrypto } from 'node:crypto';
-if (!global.crypto) global.crypto = webcrypto;
-
-import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from '@whiskeysockets/baileys';
-import P from 'pino';
-
-const logger = P({ level: 'silent' });
-
-// Inline auth state for serverless
-function useMemoryAuthState() {
-  const creds = initAuthCreds()
-  const keys = {}
-
-  return {
-    state: {
-      creds,
-      keys
-    },
-    saveCreds: () => {
-      // For serverless, we don't persist creds between requests
-      // Each request gets fresh auth state
-    }
-  }
-}
+import { createPersistentConnection, getSession } from '../lib/session-manager.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -77,37 +53,18 @@ export default async function handler(req, res) {
     else if (cleanNumber.startsWith('33')) country = 'França';
     else if (cleanNumber.startsWith('49')) country = 'Alemanha';
 
-    // Gerar código real do WhatsApp usando Baileys
+    // Criar conexão persistente e gerar código
     const sessionId = `pair-session-${Date.now()}-${cleanNumber}`;
 
-    // Use in-memory auth state for serverless
-    const { state, saveCreds } = useMemoryAuthState();
+    console.log(`Criando sessão persistente para: ${cleanNumber}`);
 
-    const sock = makeWASocket({
-      auth: {
-        creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, logger),
-      },
-      logger,
-      printQRInTerminal: false,
-      browser: ['Knight Bot', 'Chrome', '1.0.0'],
-    });
+    const result = await createPersistentConnection(sessionId, cleanNumber);
 
-    // Request real pairing code from WhatsApp
-    console.log(`Solicitando código de pareamento para: ${cleanNumber}`);
-
-    let pairingCode;
-    try {
-      pairingCode = await sock.requestPairingCode(cleanNumber);
-      console.log(`Código de pareamento gerado: ${pairingCode}`);
-
-      // Close connection after getting pairing code
-      sock.end();
-    } catch (error) {
-      console.error('Erro ao solicitar código de pareamento:', error);
-      sock.end();
-      throw error;
+    if (!result.success) {
+      throw new Error(result.error || 'Falha ao criar conexão persistente');
     }
+
+    const pairingCode = result.code;
 
     const response = {
       success: true,
@@ -125,15 +82,17 @@ export default async function handler(req, res) {
         '3. Toque em "Conectar um aparelho"',
         '4. Escolha "Vincular com número do telefone"',
         '5. Digite o código: ' + pairingCode,
-        '6. Aguarde a confirmação da conexão'
+        '6. A sessão fica ativa por 30 minutos para conexão'
       ],
-      security: {
-        expiresIn: '5 minutos',
-        attempts: 3,
-        encrypted: true
+      session: {
+        id: sessionId,
+        status: 'ativa',
+        expiresIn: '30 minutos',
+        persistent: true,
+        phoneNumber: cleanNumber
       },
       timestamp: new Date().toISOString(),
-      note: 'Código real de pareamento WhatsApp gerado'
+      note: 'Código real do WhatsApp com sessão persistente'
     };
 
     res.status(200).json(response);

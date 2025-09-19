@@ -11,6 +11,7 @@ import statusHandler from './api/status.js';
 import testHandler from './api/test.js';
 import qrHandler from './api/qr.js';
 import pairHandler from './api/pair.js';
+import sessionsHandler from './api/sessions.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,6 +28,7 @@ app.get('/api/status', statusHandler);
 app.get('/api/test', testHandler);
 app.get('/api/qr', qrHandler);
 app.get('/api/pair', pairHandler);
+app.get('/api/sessions', sessionsHandler);
 
 // Health check for Render
 app.get('/health', (req, res) => {

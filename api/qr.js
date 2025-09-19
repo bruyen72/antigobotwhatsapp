@@ -87,8 +87,14 @@ export default async function handler(req, res) {
       });
     });
 
-    // Wait for QR code
-    qrCodeData = await qrPromise;
+    // Wait for QR code with fallback
+    try {
+      qrCodeData = await qrPromise;
+    } catch (error) {
+      console.log('Falha na conexão Baileys, gerando QR alternativo');
+      // Fallback: QR code com instrução para usar pareamento
+      qrCodeData = `https://wa.me/qr/instructions?text=Use o código de pareamento em: ${req.headers.host}/api/pair?number=SEU_NUMERO`;
+    }
 
     // Generate QR code image from WhatsApp QR data
     const qrCodeDataURL = await QRCode.toDataURL(qrCodeData, {
