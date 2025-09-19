@@ -22,26 +22,51 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Validação robusta do número
-    const cleanNumber = number.replace(/[^0-9]/g, '');
+    // Validação E.164 conforme especificação (CRÍTICO para Baileys)
+    let cleanNumber = number.replace(/[^0-9]/g, '');
 
-    // Validações detalhadas
+    // Remover + se presente (E.164 sem +)
+    if (number.startsWith('+')) {
+      cleanNumber = number.substring(1).replace(/[^0-9]/g, '');
+    }
+
+    console.log(`📞 Processando número: ${number} → ${cleanNumber}`);
+
+    // Validações E.164 estritas
     if (cleanNumber.length < 10) {
       return res.status(400).json({
         success: false,
-        error: 'Número muito curto',
-        details: 'Mínimo 10 dígitos (código país + número)',
+        error: 'Número inválido - muito curto',
+        details: 'Formato E.164 requer mín. 10 dígitos (código país + número)',
         received: cleanNumber,
-        example: 'Brasil: 5511999999999, EUA: 15551234567'
+        examples: {
+          brasil: '5565984660212',
+          eua: '15551234567',
+          reino_unido: '447911123456'
+        },
+        note: 'Não use + no início'
       });
     }
 
     if (cleanNumber.length > 15) {
       return res.status(400).json({
         success: false,
-        error: 'Número muito longo',
-        details: 'Máximo 15 dígitos conforme padrão internacional',
-        received: cleanNumber
+        error: 'Número inválido - muito longo',
+        details: 'Formato E.164 permite máx. 15 dígitos',
+        received: cleanNumber,
+        length: cleanNumber.length
+      });
+    }
+
+    // Validação específica para números brasileiros
+    if (cleanNumber.startsWith('55') && cleanNumber.length !== 13) {
+      return res.status(400).json({
+        success: false,
+        error: 'Número brasileiro inválido',
+        details: 'Números do Brasil devem ter 13 dígitos: 55 + DDD + 9 + 8 dígitos',
+        received: cleanNumber,
+        example: '5565984660212',
+        format: '55 (código país) + 65 (DDD) + 9 + 84660212'
       });
     }
 
