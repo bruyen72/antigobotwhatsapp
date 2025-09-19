@@ -1,6 +1,11 @@
 // API de Pareamento WhatsApp Real
 import { createPersistentConnection, getSession } from '../lib/session-manager.js';
 
+// Rate limiting simples em memória
+const requestTracker = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minuto
+const MAX_REQUESTS_PER_NUMBER = 3; // Máximo 3 tentativas por número por minuto
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -31,6 +36,25 @@ export default async function handler(req, res) {
     }
 
     console.log(`📞 Processando número: ${number} → ${cleanNumber}`);
+
+    // Rate limiting check
+    const now = Date.now();
+    const requests = requestTracker.get(cleanNumber) || [];
+    const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW);
+
+    if (recentRequests.length >= MAX_REQUESTS_PER_NUMBER) {
+      return res.status(429).json({
+        success: false,
+        error: 'Muitas tentativas',
+        details: `Máximo ${MAX_REQUESTS_PER_NUMBER} tentativas por minuto para este número`,
+        retryAfter: Math.ceil((RATE_LIMIT_WINDOW - (now - recentRequests[0])) / 1000) + 's',
+        number: cleanNumber
+      });
+    }
+
+    // Registrar esta tentativa
+    recentRequests.push(now);
+    requestTracker.set(cleanNumber, recentRequests);
 
     // Validações E.164 estritas
     if (cleanNumber.length < 10) {
