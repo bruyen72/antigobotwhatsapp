@@ -1,19 +1,11 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60,
-      "memory": 1024
-    },
-    "api/qr.js": {
-      "maxDuration": 30,
-      "memory": 512
-    },
-    "api/pair.js": {
-      "maxDuration": 30,
-      "memory": 512
+  "builds": [
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/",
@@ -26,6 +18,10 @@
     {
       "src": "/pair",
       "dest": "/api/pair"
+    },
+    {
+      "src": "/bot/(.*)",
+      "dest": "/api/bot"
     },
     {
       "src": "/api",

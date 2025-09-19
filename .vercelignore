@@ -1,3 +1,4 @@
+node_modules
 node_modules/.cache
 .cache
 session/*
@@ -12,3 +13,5 @@ README.md
 *.md
 screenshots/*
 .git
+.vercel
+package-lock.json

@@ -1,46 +1,43 @@
-// Vercel serverless function handler
-const { setBotInstance, updateQR, server } = require('./server');
-
-let botStarted = false;
-
-async function startBot() {
-    if (botStarted) return;
-    botStarted = true;
-
-    console.log('🚀 Iniciando Knight Bot no Vercel...');
-
-    // Import and start the main bot
-    require('./index');
-
-    console.log('✅ Knight Bot iniciado com sucesso no Vercel!');
-}
-
+// Vercel serverless function handler - Simplified for debugging
 module.exports = async (req, res) => {
     try {
-        // Start bot if not started
-        await startBot();
+        console.log('📡 Function invoked:', req.url, req.method);
 
-        // Handle the request
-        if (req.url === '/') {
-            res.status(200).json({
-                status: 'online',
-                message: 'Knight Bot is running on Vercel!',
-                timestamp: new Date().toISOString()
-            });
-        } else if (req.url === '/status') {
-            res.status(200).json({
-                status: 'active',
-                uptime: process.uptime(),
-                memory: process.memoryUsage()
-            });
-        } else {
-            res.status(404).json({ error: 'Not found' });
+        // Set proper headers
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+            return res.status(200).end();
         }
+
+        // Simple response for debugging
+        const response = {
+            status: 'active',
+            message: 'Knight Bot API is running on Vercel!',
+            timestamp: new Date().toISOString(),
+            url: req.url,
+            method: req.method,
+            headers: req.headers,
+            environment: {
+                NODE_ENV: process.env.NODE_ENV,
+                VERCEL: process.env.VERCEL || 'false'
+            }
+        };
+
+        console.log('✅ Response sent successfully');
+        return res.status(200).json(response);
+
     } catch (error) {
-        console.error('Error in serverless function:', error);
-        res.status(500).json({
+        console.error('❌ Error in serverless function:', error);
+
+        // Ensure we always return a response
+        return res.status(500).json({
             error: 'Internal server error',
-            message: error.message
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };
