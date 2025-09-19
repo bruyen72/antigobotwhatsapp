@@ -16,7 +16,6 @@ logs
 assets
 commands
 lib
-public
 render-*
 server.js
 start.js
