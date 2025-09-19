@@ -1,10 +1,13 @@
-// Simple Vercel entry point - Test version
-module.exports = (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({
-        message: 'Knight Bot is running!',
-        timestamp: new Date().toISOString(),
-        url: req.url,
-        method: req.method
-    });
-};
+// Ultra simple Vercel function
+export default function handler(req, res) {
+    try {
+        res.status(200).json({
+            success: true,
+            message: 'Hello from Vercel!'
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+}
