@@ -1,4 +1,9 @@
 // API de Pareamento WhatsApp Real
+import { makeWASocket, DisconnectReason, useMultiFileAuthState, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import P from 'pino';
+
+const logger = P({ level: 'silent' });
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -51,21 +56,31 @@ export default async function handler(req, res) {
     else if (cleanNumber.startsWith('33')) country = 'França';
     else if (cleanNumber.startsWith('49')) country = 'Alemanha';
 
-    // Gerar código real (formato WhatsApp)
-    const codeDigits = '0123456789';
-    let pairingCode = '';
-    for (let i = 0; i < 8; i++) {
-      pairingCode += codeDigits.charAt(Math.floor(Math.random() * codeDigits.length));
-    }
+    // Gerar código real do WhatsApp usando Baileys
+    const sessionId = `pair-session-${Date.now()}-${cleanNumber}`;
 
-    const formattedCode = pairingCode.match(/.{1,4}/g)?.join('-') || pairingCode;
+    // Create temporary auth state for pairing
+    const { state, saveCreds } = await useMultiFileAuthState(`./tmp/sessions/${sessionId}`);
 
-    // Simular validação de número (em produção seria conectar ao WhatsApp)
-    const sessionId = `session-${Date.now()}-${cleanNumber}`;
+    const sock = makeWASocket({
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, logger),
+      },
+      logger,
+      printQRInTerminal: false,
+      browser: ['Knight Bot', 'Chrome', '1.0.0'],
+    });
+
+    // Request real pairing code from WhatsApp
+    const pairingCode = await sock.requestPairingCode(cleanNumber);
+
+    // Close connection after getting pairing code
+    sock.end();
 
     const response = {
       success: true,
-      code: formattedCode,
+      code: pairingCode,
       sessionId: sessionId,
       number: {
         original: number,
@@ -78,24 +93,24 @@ export default async function handler(req, res) {
         '2. Vá em Configurações (⚙️) → Aparelhos conectados',
         '3. Toque em "Conectar um aparelho"',
         '4. Escolha "Vincular com número do telefone"',
-        '5. Digite o código: ' + formattedCode,
+        '5. Digite o código: ' + pairingCode,
         '6. Aguarde a confirmação da conexão'
       ],
       security: {
-        expiresIn: '10 minutos',
+        expiresIn: '5 minutos',
         attempts: 3,
         encrypted: true
       },
       timestamp: new Date().toISOString(),
-      note: 'Código gerado para conexão WhatsApp'
+      note: 'Código real de pareamento WhatsApp gerado'
     };
 
     res.status(200).json(response);
   } catch (error) {
-    console.error('Erro na API de pareamento:', error);
+    console.error('Erro na API de pareamento real:', error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor',
+      error: 'Erro ao gerar código real do WhatsApp',
       message: error.message,
       timestamp: new Date().toISOString()
     });

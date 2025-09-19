@@ -24,10 +24,10 @@ export default function handler(req, res) {
       session: null
     },
     features: {
-      pairing: '✅ Funcional - Validação real de números',
-      qrCode: '✅ Funcional - QR codes reais gerados',
+      pairing: '✅ Funcional - Códigos reais do WhatsApp',
+      qrCode: '✅ Funcional - QR codes reais do WhatsApp',
       validation: '✅ Funcional - Detecção de país',
-      security: '✅ Funcional - Códigos com expiração',
+      security: '✅ Funcional - Integração Baileys real',
       commands: '⏳ Em desenvolvimento',
       groups: '⏳ Planejado',
       media: '⏳ Planejado'
@@ -40,8 +40,8 @@ export default function handler(req, res) {
     },
     dependencies: {
       qrcode: '✅ Instalado - Geração de QR codes',
-      baileys: '⏳ Planejado - Cliente WhatsApp',
-      axios: '⏳ Planejado - Requisições HTTP'
+      baileys: '✅ Instalado - Cliente WhatsApp real',
+      pino: '✅ Instalado - Logger para WhatsApp'
     },
     statistics: {
       deploysToday: 1,
