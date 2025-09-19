@@ -6,7 +6,7 @@ export default function handler(req, res) {
       name: 'Knight Bot',
       version: '2.0.0',
       status: 'online',
-      platform: 'Vercel Serverless',
+      platform: process.env.RENDER ? 'Render Container' : 'Local Server',
       uptime: `${Math.floor(process.uptime())} segundos`,
       memory: {
         used: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
