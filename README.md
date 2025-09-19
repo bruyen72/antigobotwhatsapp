@@ -193,3 +193,4 @@ This project contains code from various open source projects:
 - Baileys (MIT License)
 - Other libraries as listed in package.json
 # novobotwhatsapp
+# antigobotwhatsapp
