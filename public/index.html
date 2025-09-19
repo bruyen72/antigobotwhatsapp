@@ -57,18 +57,66 @@
     <div class="info">
       <h3>Próximos Passos</h3>
       <p>✅ Deploy básico funcionando</p>
-      <p>⏳ Implementar APIs WhatsApp</p>
-      <p>⏳ Adicionar funcionalidades do bot</p>
-      <p>⏳ Interface de controle</p>
+      <p>✅ APIs WhatsApp implementadas</p>
+      <p>✅ Funcionalidades do bot (mock)</p>
+      <p>✅ Interface de controle</p>
+    </div>
+
+    <div class="info">
+      <h3>🔗 APIs Disponíveis</h3>
+      <p><a href="/api/status" target="_blank" style="text-decoration: none;">📊 /api/status</a> - Status completo</p>
+      <p><a href="/api/test" target="_blank" style="text-decoration: none;">🧪 /api/test</a> - Teste básico</p>
+      <p><a href="/api/pair?number=5511999999999" target="_blank" style="text-decoration: none;">📱 /api/pair</a> - Código de pareamento</p>
+      <p><a href="/api/qr" target="_blank" style="text-decoration: none;">📷 /api/qr</a> - QR Code</p>
+    </div>
+
+    <div class="info">
+      <h3>🎮 Controles</h3>
+      <button onclick="testAPI('/api/status')" style="margin: 5px; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer;">📊 Status</button>
+      <button onclick="testAPI('/api/test')" style="margin: 5px; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">🧪 Test</button>
+      <button onclick="generatePair()" style="margin: 5px; padding: 10px; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer;">📱 Gerar Código</button>
+    </div>
+
+    <div class="info">
+      <h3>📱 Número para Pareamento</h3>
+      <input type="text" id="phoneInput" placeholder="5511999999999" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 200px;">
+      <button onclick="requestPairCode()" style="margin-left: 10px; padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 5px; cursor: pointer;">🔗 Conectar</button>
     </div>
 
     <div class="info">
       <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+      <div id="result" style="margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 5px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
     </div>
   </div>
 
   <script>
     document.getElementById('timestamp').textContent = new Date().toLocaleString('pt-BR');
+
+    async function testAPI(endpoint) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `🔄 Testando ${endpoint}...`;
+
+      try {
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        resultDiv.innerHTML = `✅ ${endpoint}:\n${JSON.stringify(data, null, 2)}`;
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Erro em ${endpoint}:\n${error.message}`;
+      }
+    }
+
+    async function generatePair() {
+      testAPI('/api/pair?number=5511999999999');
+    }
+
+    async function requestPairCode() {
+      const phone = document.getElementById('phoneInput').value;
+      if (!phone) {
+        alert('Digite um número de telefone!');
+        return;
+      }
+      testAPI(`/api/pair?number=${phone}`);
+    }
   </script>
 </body>
 </html>
