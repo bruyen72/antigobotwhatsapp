@@ -1,10 +1,26 @@
 // API QR Code Real WhatsApp
 import QRCode from 'qrcode';
-import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from '@whiskeysockets/baileys';
 import P from 'pino';
-import { useMemoryAuthState } from '../lib/auth-state.js';
 
 const logger = P({ level: 'silent' });
+
+// Inline auth state for serverless
+function useMemoryAuthState() {
+  const creds = initAuthCreds()
+  const keys = {}
+
+  return {
+    state: {
+      creds,
+      keys
+    },
+    saveCreds: () => {
+      // For serverless, we don't persist creds between requests
+      // Each request gets fresh auth state
+    }
+  }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
