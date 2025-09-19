@@ -1,4 +1,8 @@
 // API de Pareamento WhatsApp Real
+// Polyfill crypto para Baileys
+import { webcrypto } from 'node:crypto';
+if (!global.crypto) global.crypto = webcrypto;
+
 import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from '@whiskeysockets/baileys';
 import P from 'pino';
 
@@ -90,10 +94,20 @@ export default async function handler(req, res) {
     });
 
     // Request real pairing code from WhatsApp
-    const pairingCode = await sock.requestPairingCode(cleanNumber);
+    console.log(`Solicitando código de pareamento para: ${cleanNumber}`);
 
-    // Close connection after getting pairing code
-    sock.end();
+    let pairingCode;
+    try {
+      pairingCode = await sock.requestPairingCode(cleanNumber);
+      console.log(`Código de pareamento gerado: ${pairingCode}`);
+
+      // Close connection after getting pairing code
+      sock.end();
+    } catch (error) {
+      console.error('Erro ao solicitar código de pareamento:', error);
+      sock.end();
+      throw error;
+    }
 
     const response = {
       success: true,

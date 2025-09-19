@@ -1,4 +1,8 @@
 // API QR Code Real WhatsApp
+// Polyfill crypto para Baileys
+import { webcrypto } from 'node:crypto';
+if (!global.crypto) global.crypto = webcrypto;
+
 import QRCode from 'qrcode';
 import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from '@whiskeysockets/baileys';
 import P from 'pino';
@@ -48,27 +52,38 @@ export default async function handler(req, res) {
       browser: ['Knight Bot', 'Chrome', '1.0.0'],
     });
 
-    // Promise to capture QR code
+    // Promise to capture QR code com timeout aumentado para container
     const qrPromise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        console.log('QR timeout - fechando socket');
+        sock.end();
         reject(new Error('QR code generation timeout'));
-      }, 15000);
+      }, 30000); // 30 segundos para container
+
+      let qrReceived = false;
 
       sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
+        if (qr && !qrReceived) {
+          qrReceived = true;
           clearTimeout(timeout);
+          console.log('QR code recebido com sucesso');
           resolve(qr);
         }
 
         if (connection === 'close') {
           const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-          if (!shouldReconnect) {
+          if (!shouldReconnect && !qrReceived) {
             clearTimeout(timeout);
             reject(new Error('Connection closed'));
           }
         }
+      });
+
+      // Log para debug
+      sock.ev.on('connection.update', (update) => {
+        console.log('Connection update:', update.connection);
       });
     });
 
