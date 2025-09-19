@@ -1,7 +1,3 @@
-// Polyfills for Baileys crypto compatibility
-import { webcrypto } from 'node:crypto';
-global.crypto = webcrypto;
-
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';

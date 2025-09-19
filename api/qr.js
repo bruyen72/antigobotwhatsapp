@@ -1,7 +1,4 @@
 // API QR Code Real WhatsApp
-// Polyfill crypto para Baileys
-import { webcrypto } from 'node:crypto';
-if (!global.crypto) global.crypto = webcrypto;
 
 import QRCode from 'qrcode';
 import { makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds } from '@whiskeysockets/baileys';
